@@ -37,7 +37,12 @@ const companySchema = new mongoose.Schema({
     rating: {
         type: Number,
         default: 0
-    }
+    },
+    role: {
+  type: String,
+  enum: ["company"],
+  default: "company"
+}
 }, { timestamps: true });
 
 const Company = mongoose.model("Company", companySchema);
