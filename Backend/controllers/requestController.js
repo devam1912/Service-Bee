@@ -39,3 +39,25 @@ export const createRequest = async (req, res) => {
         });
     }
 }
+
+export const getCompanyRequests = async (req, res) => {
+  try {
+    if (req.user.role !== "company") {
+      return res.status(403).json({
+        message: "Only companies can view incoming requests"
+      });
+    }
+
+    const requests = await Request.find({ company: req.user._id })
+      .populate("user", "name email mobile city")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      message: "Requests fetched successfully",
+      requests
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
