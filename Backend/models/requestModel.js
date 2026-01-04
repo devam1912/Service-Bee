@@ -26,7 +26,21 @@ const serviceRequestSchema = new mongoose.Schema({
     },
     userNote: {
         type: String
-    }
+    },
+ attachments: [
+  {
+    url: {
+      type: String,
+    },
+    type: {
+      type: String,
+      enum: ["image", "video"],
+      default: "image",
+    },
+    _id: false,
+  },
+],
+
 },{timestamps:true})
 
 const Request = mongoose.model("Request", serviceRequestSchema);
