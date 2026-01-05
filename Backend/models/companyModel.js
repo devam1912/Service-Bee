@@ -42,7 +42,12 @@ const companySchema = new mongoose.Schema({
   type: String,
   enum: ["company"],
   default: "company"
+},
+isVerified: {
+  type: Boolean,
+  default: false,
 }
+
 }, { timestamps: true });
 
 const Company = mongoose.model("Company", companySchema);
