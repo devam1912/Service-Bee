@@ -19,10 +19,8 @@ export const protect = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 🔑 Try User first
     let account = await User.findById(decoded.id).select("-password");
 
-    // 🔑 If not user, try Company
     if (!account) {
       account = await Company.findById(decoded.id).select("-password");
     }
