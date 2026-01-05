@@ -1,142 +1,222 @@
-# 🐝 Service Bee – Backend
+# 🐝🎃 Service Bee – Backend
 
-Service Bee is a backend-first MERN project designed for local service discovery, issue reporting, and service request management between users and service providers (companies).
+Service Bee is a **backend-first MERN project** for **local service discovery, service booking, and real-time communication** between users and service providers (companies).
 
-This repository currently focuses on a **production-ready backend architecture** with authentication, service requests, file uploads, reviews, and cloud media storage.
+It follows **industry-grade backend architecture** with authentication, role-based access, admin moderation, and real-time features — layered with a **subtle Halloween / spooky theme** for presentation only.
+
+> 👻 Serious backend. Spooky vibes.
 
 ---
 
-## 🚀 Features Implemented
+## 🧠 Core Idea
+
+- Users raise service requests  
+- Companies accept and complete them  
+- Admins verify and control trust  
+- Real-time chat enables instant communication  
+- Spooky status labels enhance UX (presentation-only)
+
+---
+
+## 🚀 Features
 
 ### 🔐 Authentication & Authorization
 - JWT-based authentication
-- Role-based access control (`user`, `company`)
-- Protected routes using middleware
+- Role-based access (`user`, `company`, `admin`)
+- Protected routes via middleware
+- Separate login flows for users, companies, and admin
 
 ---
 
-### 🧾 Service Requests
-- Users can create service requests for companies
+### 📅 Service Requests (Booking System)
+- Users create service requests for companies
 - Request lifecycle:
   - `pending` → `accepted` → `completed`
   - `rejected`
-- Duplicate active requests are prevented
-- Companies can view only their incoming requests
-- Companies can update request status with validation rules
+- Duplicate active requests prevented
+- Companies manage only their own requests
+- Requests locked after completion
+
+Spooky aliases:
+- `pending` → 👻 Haunting  
+- `accepted` → 🧛 Possessed  
+- `completed` → 🪦 Exorcised  
 
 ---
 
-### 📎 Image Attachments
-- Optional image uploads with service requests
-- File parsing using Multer (`multipart/form-data`)
-- Images uploaded to Cloudinary
-- Only secure Cloudinary URLs stored in MongoDB
-- Multiple images supported per request
+### 💬 Real-Time Communication
+- Socket.IO powered real-time chat
+- Request-based private rooms
+- JWT-authenticated sockets
+- Chat disabled after request completion
+- Messages persisted in MongoDB
+
+---
+
+### 📎 Attachments & Media
+- Image uploads with service requests
+- Multer for multipart parsing
+- Cloudinary for cloud storage
+- Secure URLs stored in MongoDB
+- Up to 3 images per request
 
 ---
 
 ### ⭐ Reviews & Ratings
-- Reviews allowed only for completed requests
+- Reviews allowed only after request completion
 - One review per request
-- Ratings automatically update company average rating
+- Company average rating updated automatically
 
 ---
 
-## 🧱 Tech Stack (Backend)
+### 🧑‍💼 Admin Control
+- Admin login (no public registration)
+- View all users, companies, and requests
+- Verify companies before user visibility
+
+---
+
+### 🛡️ Trust & Verification
+- Companies unverified by default
+- Only verified companies appear to users
+- Admin-controlled trust flow
+
+---
+
+## 🧱 Tech Stack
 
 - Node.js
 - Express.js
 - MongoDB + Mongoose
-- JWT (Authentication)
-- Multer (File upload parsing)
-- Cloudinary (Cloud image storage)
+- JWT
+- Socket.IO
+- Multer
+- Cloudinary
 
 ---
 
-## 🗂️ Project Structure (Backend)
+## 🗂️ Project Structure
 
 ```text
 Backend/
 ├── config/
+│   ├── connectDB.js
 │   └── cloudinary.js
-│
+├── constants/
+│   └── spookyStatus.js
 ├── controllers/
+│   ├── userController.js
+│   ├── companyController.js
 │   ├── requestController.js
 │   ├── reviewController.js
-│   └── companyController.js
-│
+│   └── adminController.js
 ├── middleware/
 │   ├── authMiddleware.js
+│   ├── adminMiddleware.js
 │   └── uploadMiddleware.js
-│
 ├── models/
 │   ├── userModel.js
 │   ├── companyModel.js
 │   ├── requestModel.js
-│   └── reviewModel.js
-│
+│   ├── reviewModel.js
+│   └── adminModel.js
 ├── routes/
+│   ├── testRoute.js
 │   ├── userRoutes.js
 │   ├── companyRoutes.js
 │   ├── requestRoutes.js
-│   └── reviewRoutes.js
-│
+│   ├── reviewRoutes.js
+│   └── adminRoutes.js
+├── socket/
+│   ├── auth.js
+│   └── index.js
 ├── index.js
 └── package.json
+
+
 ```
 
-🔧 Environment Variables
+## 🛣️ API Routes
 
-Create a .env file in the Backend directory with the following:
+### 🧪 Test
+| Method | Endpoint |
+|------|----------|
+| GET | `/api/test` |
 
+---
+
+### 👤 Users
+| Method | Endpoint |
+|------|----------|
+| POST | `/api/users/register` |
+| POST | `/api/users/login` |
+| GET | `/api/users/profile` |
+
+---
+
+### 🏢 Companies
+| Method | Endpoint |
+|------|----------|
+| POST | `/api/companies/register` |
+| POST | `/api/companies/login` |
+| GET | `/api/companies` |
+
+---
+
+### 📅 Requests
+| Method | Endpoint |
+|------|----------|
+| POST | `/api/requests` |
+| GET | `/api/requests/company` |
+| PATCH | `/api/requests/:id/status` |
+
+---
+
+### ⭐ Reviews
+| Method | Endpoint |
+|------|----------|
+| POST | `/api/reviews` |
+
+---
+
+### 🧑‍💼 Admin
+| Method | Endpoint |
+|------|----------|
+| POST | `/api/admin/login` |
+| GET | `/api/admin/users` |
+| GET | `/api/admin/companies` |
+| PATCH | `/api/admin/companies/:id/verify` |
+| GET | `/api/admin/requests` |
+
+---
+
+## 🎃 Halloween Touch
+
+Presentation-only spooky labels via `spookyStatus.js`.
+
+| Status | Label |
+|------|------|
+| pending | 👻 Haunting |
+| accepted | 🧛 Possessed |
+| completed | 🪦 Exorcised |
+
+---
+
+## 🔧 Environment Variables
+
+```env
 PORT=9876
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret
-
 CLOUDINARY_NAME=your_cloudinary_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
+```
+🏁 Project Status
 
-⚠️ Never commit .env files to GitHub.
-
-🧪 API Testing
-
-APIs tested using Postman
-
-Authorization via header:
-
-Authorization: Bearer <TOKEN>
-
-
-File uploads use multipart/form-data
-
-Image field name: attachments
-
-🛣️ Roadmap
-
-Real-time chat between users and companies (Socket.IO)
-
-Message persistence and chat history
-
-Frontend integration (React)
-
-Activity timeline for service requests
-
-📌 Development Notes
-
-Backend built with clean architecture principles
-
-Media handling is cloud-ready and storage-agnostic
-
-Business logic separated from middleware
-
-Designed for real-world scalability
-
-👨‍💻 Author
-
-Built as part of a hands-on MERN stack learning project focused on industry-level backend development.
-
-📅 Daily Updates
-
-This README is updated incrementally as new features are added.
+✅ Backend complete
+✅ Real-time chat
+✅ Admin verification
+🎃 Spooky theme
+🚀 Submission ready
