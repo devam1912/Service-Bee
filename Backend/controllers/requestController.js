@@ -14,21 +14,53 @@ export const createRequest = async (req, res) => {
       });
     }
 
-    const { companyId, serviceName, userNote } = req.body;
+    // 🔐 Multer-safe body fallback
+    const body = req.body || {};
+    const { companyId, serviceName, userNote, bookingDate } = body;
 
-    if (!companyId || !serviceName?.trim()) {
+    if (!companyId || !serviceName?.trim() || !bookingDate) {
       return res.status(400).json({
-        message: "🕯️ Company ID and service name are required",
+        message: "📅 Company, service and booking date are required",
       });
     }
 
-    const company = await Company.findById(companyId).select("_id");
+    // 🏢 Fetch company
+    let company = await Company.findById(companyId);
     if (!company) {
       return res.status(404).json({
         message: "🪦 The chosen company spirit was not found",
       });
     }
 
+    // 🧠 Auto-heal old companies (no workingDays)
+    if (!company.workingDays || company.workingDays.length === 0) {
+      company.workingDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+      company.dailySlotCapacity = company.dailySlotCapacity || 5;
+      await company.save();
+    }
+
+    // 📆 Working day check
+    const day = new Date(bookingDate).toLocaleDateString("en-US", { weekday: "short" });
+    if (!company.workingDays.includes(day)) {
+      return res.status(400).json({
+        message: `❌ This spirit does not operate on ${day}`,
+      });
+    }
+
+    // 🔐 Slot capacity check
+    const bookedCount = await Request.countDocuments({
+      company: companyId,
+      bookingDate: new Date(bookingDate),
+      status: { $in: ["pending", "accepted"] },
+    });
+
+    if (bookedCount >= company.dailySlotCapacity) {
+      return res.status(400).json({
+        message: "🚫 All slots for this date are already haunted",
+      });
+    }
+
+    // 👀 Prevent duplicate active requests
     const existingRequest = await Request.findOne({
       user: req.user._id,
       company: companyId,
@@ -42,43 +74,45 @@ export const createRequest = async (req, res) => {
       });
     }
 
+    // 📎 Attachments
     let attachments = [];
-
     if (Array.isArray(req.files) && req.files.length > 0) {
       for (const file of req.files) {
         const result = await cloudinary.uploader.upload(
           `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
-          {
-            folder: "service-bee/requests",
-          }
+          { folder: "service-bee/requests" }
         );
-
-        attachments.push({
-          url: result.secure_url,
-          type: "image",
-        });
+        attachments.push({ url: result.secure_url, type: "image" });
       }
     }
+
+    // ⏳ Auto-expiry (30 mins)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
     const request = await Request.create({
       user: req.user._id,
       company: companyId,
       serviceName: serviceName.trim(),
       userNote: userNote?.trim(),
+      bookingDate,
       attachments,
+      expiresAt,
     });
 
     res.status(201).json({
-      message: "👻 Your request has been summoned successfully",
+      message: "👻 Your haunted slot has been successfully summoned",
       request,
-      spookyStatus: SPOOKY_STATUS[request.status],
+      spookyStatus: SPOOKY_STATUS.pending,
     });
   } catch (error) {
+    console.error("CREATE REQUEST ERROR:", error);
     res.status(500).json({
       message: "🕯️ Something dark went wrong on the server",
     });
   }
 };
+
+
 
 /**
  * 🧛 GET COMPANY REQUESTS (Company)
