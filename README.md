@@ -27,6 +27,21 @@ It follows **industry-grade backend architecture** with authentication, role-bas
 - Separate login flows for users, companies, and admin
 
 ---
+### 🧠 Smart Availability Engine (Bonus Feature)
+
+Service Bee includes an intelligent booking system that prevents overbooking and adds automatic slot management.
+
+#### 🔮 How It Works
+
+• Companies define working days and daily slot capacity  
+• Users must select a booking date  
+• Backend validates day availability  
+• Slots auto-lock when booked  
+• Pending requests auto-expire after 30 minutes  
+• Expired requests automatically free slots  
+
+This makes the booking system **self-healing, overbooking-proof, and production ready.**
+---
 
 ### 📅 Service Requests (Booking System)
 - Users create service requests for companies
@@ -166,7 +181,7 @@ Backend/
 ### 📅 Requests
 | Method | Endpoint |
 |------|----------|
-| POST | `/api/requests` |
+| POST | `/api/requests`| Create service request (with booking date & slot validation) |
 | GET | `/api/requests/company` |
 | PATCH | `/api/requests/:id/status` |
 
