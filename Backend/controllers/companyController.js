@@ -1,6 +1,14 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Company from "../models/companyModel.js";
+import { SPOOKY_AURA } from "../constants/spookyTrust.js";
+
+const getAuraLevel = (score) => {
+  if (score >= 80) return SPOOKY_AURA.ASCENDED;
+  if (score >= 50) return SPOOKY_AURA.POSSESSED;
+  if (score >= 20) return SPOOKY_AURA.HAUNTED;
+  return SPOOKY_AURA.CURSED;
+};
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
