@@ -1,6 +1,6 @@
 # 🐝🎃 Service Bee – Backend
 
-Service Bee is a **backend-first MERN project** for **local service discovery, service booking, and real-time communication** between users and service providers (companies).
+Service Bee is a **production-grade MERN backend** for **local service discovery, smart service booking, and real-time communication** between users and verified service providers.
 
 It follows **industry-grade backend architecture** with authentication, role-based access, admin moderation, and real-time features — layered with a **subtle Halloween / spooky theme** for presentation only.
 
@@ -40,15 +40,18 @@ Service Bee includes an intelligent booking system that prevents overbooking and
 • Pending requests auto-expire after 30 minutes  
 • Expired requests automatically free slots  
 
-This makes the booking system **self-healing, overbooking-proof, and production ready.**
+This makes the booking system **self-healing, overbooking-proof, and production-ready.**
+
 ---
 ### 👁️ Paranormal Trust Score (Ranking System)
 
 Service Bee includes a spooky-themed ranking engine that automatically ranks companies based on service quality and reliability.
 
-**Trust Score Formula**
+**Trust Score Formula:**
 
 trustScore = (averageRating × 20) + completedRequests − (rejectedRequests × 5)
+
+The formula ensures reliable providers rise and poor performers automatically sink.
 
 **Aura Levels**
 | Trust Score | Aura |
@@ -194,13 +197,13 @@ Backend/
 | GET | `/api/companies` |
 
 ---
-
 ### 📅 Requests
-| Method | Endpoint |
-|------|----------|
-| POST | `/api/requests`| Create service request (with booking date & slot validation) |
-| GET | `/api/requests/company` |
-| PATCH | `/api/requests/:id/status` |
+| Method | Endpoint | Description |
+|-------|----------|-------------|
+| POST  | `/api/requests` | Create service request (with booking date & slot validation) |
+| GET   | `/api/requests/company` | Get all requests for logged-in company |
+| PATCH | `/api/requests/:id/status` | Update request status |
+
 
 ---
 
