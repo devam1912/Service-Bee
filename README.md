@@ -42,7 +42,24 @@ Service Bee includes an intelligent booking system that prevents overbooking and
 
 This makes the booking system **self-healing, overbooking-proof, and production ready.**
 ---
+### 👁️ Paranormal Trust Score (Ranking System)
 
+Service Bee includes a spooky-themed ranking engine that automatically ranks companies based on service quality and reliability.
+
+**Trust Score Formula**
+
+trustScore = (averageRating × 20) + completedRequests − (rejectedRequests × 5)
+
+**Aura Levels**
+| Trust Score | Aura |
+|------------|------|
+| 0–19 | 🕸️ Cursed |
+| 20–49 | 🧟 Haunted |
+| 50–79 | 🧛 Possessed |
+| 80+ | 👁️ Ascended |
+
+Companies are automatically sorted by trust score in the public marketplace.
+---
 ### 📅 Service Requests (Booking System)
 - Users create service requests for companies
 - Request lifecycle:
