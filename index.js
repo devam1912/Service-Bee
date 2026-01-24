@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 import connectDB from "./config/connectDB.js";
 
@@ -25,7 +26,7 @@ app.use("/api/requests", requestRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin", adminRoutes);
-
+app.use("/api/payments", paymentRoutes);
 
 // DB
 connectDB();
