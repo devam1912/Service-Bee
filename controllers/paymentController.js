@@ -2,6 +2,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Payment from "../models/paymentModel.js";
 import Request from "../models/requestModel.js";
+import { io } from "../index.js";
 
 /**
  * Lazy-init Razorpay so the server doesn't crash on startup
@@ -31,8 +32,8 @@ export const createOrder = async (req, res) => {
     const request = await Request.findById(requestId);
     if (!request) return res.status(404).json({ message: "Request not found" });
 
-    // ensure only owner can pay
-    if (String(request.userId) !== String(req.user._id)) {
+    // ensure only owner can pay (Request schema uses `user`)
+    if (String(request.user) !== String(req.user._id)) {
       return res.status(403).json({ message: "Not allowed" });
     }
 
@@ -52,12 +53,31 @@ export const createOrder = async (req, res) => {
 
     await Payment.create({
       requestId: request._id,
-      userId: request.userId,
-      companyId: request.companyId,
+      userId: request.user,       // ✅ fixed
+      companyId: request.company, // ✅ fixed
       orderId: order.id,
       amount,
       currency: "INR",
       status: "created",
+    });
+
+    // optional realtime notify: "payment initiated"
+    io.to(`request:${request._id}`).emit("payment:statusUpdated", {
+      requestId: request._id,
+      paymentStatus: "pending",
+      isConfirmed: false,
+    });
+
+    io.to(`user:${request.user}`).emit("payment:statusUpdated", {
+      requestId: request._id,
+      paymentStatus: "pending",
+      isConfirmed: false,
+    });
+
+    io.to(`company:${request.company}`).emit("payment:statusUpdated", {
+      requestId: request._id,
+      paymentStatus: "pending",
+      isConfirmed: false,
     });
 
     return res.json({
@@ -104,10 +124,32 @@ export const verifyPayment = async (req, res) => {
       payment.signature = razorpay_signature;
       await payment.save();
 
-      await Request.findByIdAndUpdate(payment.requestId, {
-        paymentStatus: "failed",
-        isConfirmed: false,
-      });
+      const updatedRequest = await Request.findByIdAndUpdate(
+        payment.requestId,
+        { paymentStatus: "failed", isConfirmed: false },
+        { new: true }
+      );
+
+      // realtime emit
+      if (updatedRequest) {
+        io.to(`request:${updatedRequest._id}`).emit("payment:statusUpdated", {
+          requestId: updatedRequest._id,
+          paymentStatus: updatedRequest.paymentStatus,
+          isConfirmed: updatedRequest.isConfirmed,
+        });
+
+        io.to(`user:${updatedRequest.user}`).emit("payment:statusUpdated", {
+          requestId: updatedRequest._id,
+          paymentStatus: updatedRequest.paymentStatus,
+          isConfirmed: updatedRequest.isConfirmed,
+        });
+
+        io.to(`company:${updatedRequest.company}`).emit("payment:statusUpdated", {
+          requestId: updatedRequest._id,
+          paymentStatus: updatedRequest.paymentStatus,
+          isConfirmed: updatedRequest.isConfirmed,
+        });
+      }
 
       return res.status(400).json({ message: "Payment verification failed" });
     }
@@ -117,10 +159,32 @@ export const verifyPayment = async (req, res) => {
     payment.signature = razorpay_signature;
     await payment.save();
 
-    await Request.findByIdAndUpdate(payment.requestId, {
-      paymentStatus: "paid",
-      isConfirmed: true,
-    });
+    const updatedRequest = await Request.findByIdAndUpdate(
+      payment.requestId,
+      { paymentStatus: "paid", isConfirmed: true },
+      { new: true }
+    );
+
+    // realtime emit
+    if (updatedRequest) {
+      io.to(`request:${updatedRequest._id}`).emit("payment:statusUpdated", {
+        requestId: updatedRequest._id,
+        paymentStatus: updatedRequest.paymentStatus,
+        isConfirmed: updatedRequest.isConfirmed,
+      });
+
+      io.to(`user:${updatedRequest.user}`).emit("payment:statusUpdated", {
+        requestId: updatedRequest._id,
+        paymentStatus: updatedRequest.paymentStatus,
+        isConfirmed: updatedRequest.isConfirmed,
+      });
+
+      io.to(`company:${updatedRequest.company}`).emit("payment:statusUpdated", {
+        requestId: updatedRequest._id,
+        paymentStatus: updatedRequest.paymentStatus,
+        isConfirmed: updatedRequest.isConfirmed,
+      });
+    }
 
     return res.json({ message: "Payment verified, booking confirmed" });
   } catch (err) {

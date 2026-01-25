@@ -2,6 +2,7 @@ import Company from "../models/companyModel.js";
 import Request from "../models/requestModel.js";
 import cloudinary from "../config/cloudinary.js";
 import { SPOOKY_STATUS } from "../constants/spookyStatus.js";
+import { io } from "../index.js";
 
 const calculateTrustScore = async (companyId) => {
   const completed = await Request.countDocuments({ company: companyId, status: "completed" });
@@ -87,7 +88,6 @@ export const createRequest = async (req, res) => {
       attachments,
       expiresAt,
 
-      // Payments defaults (make sure these fields exist in requestModel.js)
       paymentStatus: "pending",
       isConfirmed: false,
     });
@@ -132,7 +132,6 @@ export const updateRequestStatus = async (req, res) => {
     const { requestId } = req.params;
     const { status: newStatus } = req.body;
 
-    // Allowed statuses for company update
     if (!["accepted", "rejected", "completed"].includes(newStatus)) {
       return res.status(400).json({ message: "🕯️ Invalid ritual (status) attempted" });
     }
@@ -142,21 +141,14 @@ export const updateRequestStatus = async (req, res) => {
       return res.status(404).json({ message: "🪦 This request spirit no longer exists" });
     }
 
-    // Company can only update its own requests
     if (request.company.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "⛔ You are not bound to this request" });
     }
 
-    // Final states are locked
     if (["completed", "rejected"].includes(request.status)) {
       return res.status(400).json({ message: "🪦 This request has already been sealed" });
     }
 
-    /**
-     * Lifecycle rules:
-     * pending   -> accepted/rejected
-     * accepted  -> completed
-     */
     const allowedTransitions = {
       pending: ["accepted", "rejected"],
       accepted: ["completed"],
@@ -166,7 +158,7 @@ export const updateRequestStatus = async (req, res) => {
       return res.status(400).json({ message: "🕯️ Invalid status transition" });
     }
 
-    // ✅ PAYMENT GATE: cannot accept unless paid & confirmed
+    // ✅ PAYMENT GATE
     if (newStatus === "accepted") {
       if (request.paymentStatus !== "paid" || request.isConfirmed !== true) {
         return res.status(400).json({
@@ -181,6 +173,19 @@ export const updateRequestStatus = async (req, res) => {
     if (["completed", "rejected"].includes(newStatus)) {
       await calculateTrustScore(request.company);
     }
+
+    // ✅ SOCKET EMITS (realtime updates)
+    const payload = {
+      requestId: request._id,
+      status: request.status,
+      spookyStatus: SPOOKY_STATUS[request.status],
+      paymentStatus: request.paymentStatus,
+      isConfirmed: request.isConfirmed,
+    };
+
+    io.to(`request:${request._id}`).emit("request:statusUpdated", payload);
+    io.to(`user:${request.user}`).emit("request:statusUpdated", payload);
+    io.to(`company:${request.company}`).emit("request:statusUpdated", payload);
 
     res.status(200).json({
       message: `🧙 Request has been ${newStatus}`,
