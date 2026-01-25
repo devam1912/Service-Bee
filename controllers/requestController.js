@@ -10,7 +10,7 @@ const calculateTrustScore = async (companyId) => {
   const company = await Company.findById(companyId);
   if (!company) return;
 
-  const score = Math.max((company.rating * 20) + completed - rejected * 5, 0);
+  const score = Math.max(company.rating * 20 + completed - rejected * 5, 0);
   company.trustScore = score;
   await company.save();
 };
@@ -86,6 +86,10 @@ export const createRequest = async (req, res) => {
       bookingDate,
       attachments,
       expiresAt,
+
+      // Payments defaults (make sure these fields exist in requestModel.js)
+      paymentStatus: "pending",
+      isConfirmed: false,
     });
 
     res.status(201).json({
@@ -126,9 +130,10 @@ export const updateRequestStatus = async (req, res) => {
     }
 
     const { requestId } = req.params;
-    const { status } = req.body;
+    const { status: newStatus } = req.body;
 
-    if (!["accepted", "rejected", "completed"].includes(status)) {
+    // Allowed statuses for company update
+    if (!["accepted", "rejected", "completed"].includes(newStatus)) {
       return res.status(400).json({ message: "🕯️ Invalid ritual (status) attempted" });
     }
 
@@ -137,27 +142,48 @@ export const updateRequestStatus = async (req, res) => {
       return res.status(404).json({ message: "🪦 This request spirit no longer exists" });
     }
 
+    // Company can only update its own requests
     if (request.company.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "⛔ You are not bound to this request" });
     }
 
+    // Final states are locked
     if (["completed", "rejected"].includes(request.status)) {
       return res.status(400).json({ message: "🪦 This request has already been sealed" });
     }
 
-    if (status === "completed" && request.status !== "accepted") {
-      return res.status(400).json({ message: "⚠️ Only possessed requests can be exorcised" });
+    /**
+     * Lifecycle rules:
+     * pending   -> accepted/rejected
+     * accepted  -> completed
+     */
+    const allowedTransitions = {
+      pending: ["accepted", "rejected"],
+      accepted: ["completed"],
+    };
+
+    if (!allowedTransitions[request.status]?.includes(newStatus)) {
+      return res.status(400).json({ message: "🕯️ Invalid status transition" });
     }
 
-    request.status = status;
+    // ✅ PAYMENT GATE: cannot accept unless paid & confirmed
+    if (newStatus === "accepted") {
+      if (request.paymentStatus !== "paid" || request.isConfirmed !== true) {
+        return res.status(400).json({
+          message: "Booking not confirmed. Payment pending.",
+        });
+      }
+    }
+
+    request.status = newStatus;
     await request.save();
 
-    if (["completed", "rejected"].includes(status)) {
+    if (["completed", "rejected"].includes(newStatus)) {
       await calculateTrustScore(request.company);
     }
 
     res.status(200).json({
-      message: `🧙 Request has been ${status}`,
+      message: `🧙 Request has been ${newStatus}`,
       request,
       spookyStatus: SPOOKY_STATUS[request.status],
     });
