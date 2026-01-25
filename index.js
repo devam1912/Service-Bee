@@ -16,10 +16,11 @@ import adminRoutes from "./routes/adminRoutes.js"
 dotenv.config();
 
 const app = express();
-
+import { applySecurity } from "./middleware/securityMiddleware.js";
 // middleware
 app.use(express.json());
-
+app.use(express.json());
+applySecurity(app);
 // routes
 app.use("/api", testRoute);
 app.use("/api/users", userRoutes);

@@ -22,6 +22,11 @@ export const createRequest = async (req, res) => {
       return res.status(403).json({ message: "👻 Only mortals (users) can summon service requests" });
     }
 
+    // ✅ TERMS ENFORCEMENT
+    if (!req.user.termsAccepted) {
+      return res.status(403).json({ message: "Please accept Terms & Conditions first." });
+    }
+
     const body = req.body || {};
     const { companyId, serviceName, userNote, bookingDate } = body;
 
@@ -174,7 +179,6 @@ export const updateRequestStatus = async (req, res) => {
       await calculateTrustScore(request.company);
     }
 
-    // ✅ SOCKET EMITS (realtime updates)
     const payload = {
       requestId: request._id,
       status: request.status,

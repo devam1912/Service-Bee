@@ -3,7 +3,7 @@ import Request from "../models/requestModel.js";
 import Message from "../models/messageModel.js";
 import GlobalMessage from "../models/globalMessageModel.js";
 import ChatModeration from "../models/chatModerationModel.js";
-import User from "../models/userModel.js";
+import User from "../models/UserModel.js";
 import Company from "../models/companyModel.js";
 
 const normalizeText = (s = "") =>
