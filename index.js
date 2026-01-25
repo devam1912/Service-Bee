@@ -3,9 +3,10 @@ import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
 import paymentRoutes from "./routes/paymentRoutes.js";
-
+import globalChatRoutes from "./routes/globalChatRoutes.js";
+import adminGlobalChatRoutes from "./routes/adminGlobalChatRoutes.js";
 import connectDB from "./config/connectDB.js";
-
+import termsRoutes from "./routes/termsRoutes.js";
 import testRoute from "./routes/testRoute.js";
 import userRoutes from "./routes/userRoutes.js";
 import requestRoutes from "./routes/requestRoutes.js";
@@ -27,7 +28,9 @@ app.use("/api/companies", companyRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/payments", paymentRoutes);
-
+app.use("/api/global-chat", globalChatRoutes);
+app.use("/api/admin/global-chat", adminGlobalChatRoutes);
+app.use("/api/terms", termsRoutes);
 // DB
 connectDB();
 

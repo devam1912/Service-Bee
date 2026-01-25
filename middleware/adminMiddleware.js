@@ -25,3 +25,4 @@ export const protectAdmin = async (req, res, next) => {
     return res.status(401).json({ message: "Admin authentication failed" });
   }
 };
+export const adminProtect = protectAdmin;

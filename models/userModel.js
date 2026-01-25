@@ -26,12 +26,23 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    termsAccepted: {
+        type: Boolean,
+        default: false
+    },
+    termsAcceptedAt: {
+        type: Date,
+        default: null
+    },
+
     role: {
-  type: String,
-  enum: ["user"],
-  default: "user"
-}
+        type: String,
+        enum: ["user"],
+        default: "user"
+    }
 }, { timestamps: true });
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.models.User || mongoose.model("User", userSchema);
 export default User;
+
+
