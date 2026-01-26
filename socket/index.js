@@ -64,9 +64,6 @@ export default function initSocket(io) {
       return socket._spam.count <= spamLimit;
     };
 
-    /**
-     * Dashboard rooms (for realtime booking/payment updates)
-     */
     socket.on("join:user", (userId) => {
       if (socket.actor.type !== "User") return;
       if (socket.actor.id.toString() !== userId.toString()) return;
@@ -79,9 +76,6 @@ export default function initSocket(io) {
       socket.join(`company:${companyId}`);
     });
 
-    /**
-     * Request room (private chat + request/payment realtime)
-     */
     socket.on("join:request", async (requestId) => {
       const request = await Request.findById(requestId);
       if (!request) return;
@@ -101,9 +95,6 @@ export default function initSocket(io) {
       socket.join(`request:${requestId}`);
     });
 
-    /**
-     * Backward compatible event name
-     */
     socket.on("joinRequest", async (requestId) => {
       const request = await Request.findById(requestId);
       if (!request) return;
@@ -124,11 +115,15 @@ export default function initSocket(io) {
       socket.join(requestId);
     });
 
-    /**
-     * Private request message
-     */
+    // ✅ Private request message + TERMS enforcement
     socket.on("sendMessage", async ({ requestId, text }) => {
       if (!text?.trim()) return;
+
+      const ok = await hasAcceptedTerms(socket.actor);
+      if (!ok) {
+        socket.emit("chat:error", { message: "Please accept Terms & Conditions first." });
+        return;
+      }
 
       const request = await Request.findById(requestId);
       if (!request) return;
@@ -162,9 +157,6 @@ export default function initSocket(io) {
       io.to(requestId).emit("newMessage", message); // legacy
     });
 
-    /**
-     * ✅ GLOBAL COMMUNITY CHAT
-     */
     socket.on("join:global", async () => {
       const ok = await hasAcceptedTerms(socket.actor);
       if (!ok) {
@@ -178,14 +170,12 @@ export default function initSocket(io) {
       try {
         if (!text?.trim()) return;
 
-        // ✅ terms enforcement
         const ok = await hasAcceptedTerms(socket.actor);
         if (!ok) {
           socket.emit("global:error", { message: "Please accept Terms & Conditions first." });
           return;
         }
 
-        // spam check
         if (!spamCheck()) {
           socket.emit("global:error", { message: "Slow down. Too many messages." });
           return;
@@ -193,7 +183,6 @@ export default function initSocket(io) {
 
         const moderation = await getModerationDoc();
 
-        // banned check
         const isBanned = moderation.banned?.some(
           (b) =>
             b.actorType === socket.actor.type &&
@@ -204,7 +193,6 @@ export default function initSocket(io) {
           return;
         }
 
-        // muted check
         const now = new Date();
         const muteEntry = moderation.muted?.find(
           (m) =>
@@ -219,7 +207,6 @@ export default function initSocket(io) {
           return;
         }
 
-        // abusive words check (block)
         const bannedWords = moderation.bannedWords || [];
         if (containsBannedWord(text, bannedWords)) {
           socket.emit("global:error", { message: "Message blocked due to abusive words." });
@@ -234,7 +221,7 @@ export default function initSocket(io) {
         });
 
         io.to("global").emit("global:newMessage", msg);
-      } catch (err) {
+      } catch {
         socket.emit("global:error", { message: "Global chat failed." });
       }
     });
