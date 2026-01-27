@@ -2,25 +2,30 @@ import express from "express";
 import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
-import paymentRoutes from "./routes/paymentRoutes.js";
-import globalChatRoutes from "./routes/globalChatRoutes.js";
-import adminGlobalChatRoutes from "./routes/adminGlobalChatRoutes.js";
+
 import connectDB from "./config/connectDB.js";
-import termsRoutes from "./routes/termsRoutes.js";
+import { applySecurity } from "./middleware/securityMiddleware.js";
+
 import testRoute from "./routes/testRoute.js";
 import userRoutes from "./routes/userRoutes.js";
 import requestRoutes from "./routes/requestRoutes.js";
 import companyRoutes from "./routes/companyRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
-import adminRoutes from "./routes/adminRoutes.js" 
+import adminRoutes from "./routes/adminRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import globalChatRoutes from "./routes/globalChatRoutes.js";
+import adminGlobalChatRoutes from "./routes/adminGlobalChatRoutes.js";
+import termsRoutes from "./routes/termsRoutes.js";
+
+import initSocket from "./socket/index.js";
+import { setIO } from "./socket/socket.js"; // ✅ ADD THIS
+
 dotenv.config();
 
 const app = express();
-import { applySecurity } from "./middleware/securityMiddleware.js";
-// middleware
-app.use(express.json());
 app.use(express.json());
 applySecurity(app);
+
 // routes
 app.use("/api", testRoute);
 app.use("/api/users", userRoutes);
@@ -32,9 +37,9 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/global-chat", globalChatRoutes);
 app.use("/api/admin/global-chat", adminGlobalChatRoutes);
 app.use("/api/terms", termsRoutes);
+
 // DB
 connectDB();
-
 
 const server = http.createServer(app);
 
@@ -44,10 +49,13 @@ const io = new Server(server, {
   },
 });
 
-export { io };
+// ✅ REGISTER SOCKET INSTANCE GLOBALLY
+setIO(io);
 
-import "./socket/index.js";
+// ✅ INITIALIZE SOCKET LISTENERS
+initSocket(io);
 
-server.listen(process.env.PORT, () => {
-  console.log(`Server is listening on port ${process.env.PORT}`);
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server is listening on port ${PORT}`);
 });

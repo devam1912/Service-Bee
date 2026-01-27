@@ -2,20 +2,17 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Payment from "../models/paymentModel.js";
 import Request from "../models/requestModel.js";
-import { io } from "../index.js";
+import { getIO } from "../socket/socket.js"; // ✅ FIX
 
 /**
- * Lazy-init Razorpay so the server doesn't crash on startup
- * if env variables are missing or dotenv loads later.
+ * Lazy-init Razorpay so server doesn't crash on startup
  */
 const getRazorpay = () => {
   const key_id = process.env.RAZORPAY_KEY_ID;
   const key_secret = process.env.RAZORPAY_KEY_SECRET;
 
   if (!key_id || !key_secret) {
-    throw new Error(
-      "Razorpay keys missing: set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Backend/.env"
-    );
+    throw new Error("Razorpay keys missing");
   }
 
   return new Razorpay({ key_id, key_secret });
@@ -25,69 +22,45 @@ const getRazorpay = () => {
 export const createOrder = async (req, res) => {
   try {
     const razorpay = getRazorpay();
-
     const { requestId } = req.body;
-    if (!requestId) return res.status(400).json({ message: "requestId is required" });
 
     const request = await Request.findById(requestId);
     if (!request) return res.status(404).json({ message: "Request not found" });
 
-    // ensure only owner can pay (Request schema uses `user`)
     if (String(request.user) !== String(req.user._id)) {
       return res.status(403).json({ message: "Not allowed" });
     }
 
-    // prevent double pay
     if (request.paymentStatus === "paid") {
       return res.status(400).json({ message: "Already paid" });
     }
 
-    // pricing logic (replace later with real calculation)
     const amount = request.amount || 199;
 
     const order = await razorpay.orders.create({
-      amount: amount * 100, // paise
+      amount: amount * 100,
       currency: "INR",
       receipt: `rcpt_${requestId}_${Date.now()}`,
     });
 
     await Payment.create({
       requestId: request._id,
-      userId: request.user,       // ✅ fixed
-      companyId: request.company, // ✅ fixed
+      userId: request.user,
+      companyId: request.company,
       orderId: order.id,
       amount,
       currency: "INR",
       status: "created",
     });
 
-    // optional realtime notify: "payment initiated"
-    io.to(`request:${request._id}`).emit("payment:statusUpdated", {
-      requestId: request._id,
-      paymentStatus: "pending",
-      isConfirmed: false,
-    });
-
-    io.to(`user:${request.user}`).emit("payment:statusUpdated", {
-      requestId: request._id,
-      paymentStatus: "pending",
-      isConfirmed: false,
-    });
-
-    io.to(`company:${request.company}`).emit("payment:statusUpdated", {
-      requestId: request._id,
-      paymentStatus: "pending",
-      isConfirmed: false,
-    });
-
-    return res.json({
+    res.json({
       keyId: process.env.RAZORPAY_KEY_ID,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
     });
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -96,16 +69,9 @@ export const verifyPayment = async (req, res) => {
   try {
     const { orderId, razorpay_payment_id, razorpay_signature } = req.body;
 
-    if (!orderId || !razorpay_payment_id || !razorpay_signature) {
-      return res.status(400).json({
-        message: "orderId, razorpay_payment_id, and razorpay_signature are required",
-      });
-    }
-
     const payment = await Payment.findOne({ orderId });
-    if (!payment) return res.status(404).json({ message: "Payment order not found" });
+    if (!payment) return res.status(404).json({ message: "Payment not found" });
 
-    // only that user can verify
     if (String(payment.userId) !== String(req.user._id)) {
       return res.status(403).json({ message: "Not allowed" });
     }
@@ -116,41 +82,9 @@ export const verifyPayment = async (req, res) => {
       .update(body)
       .digest("hex");
 
-    const isValid = expected === razorpay_signature;
-
-    if (!isValid) {
+    if (expected !== razorpay_signature) {
       payment.status = "failed";
-      payment.paymentId = razorpay_payment_id;
-      payment.signature = razorpay_signature;
       await payment.save();
-
-      const updatedRequest = await Request.findByIdAndUpdate(
-        payment.requestId,
-        { paymentStatus: "failed", isConfirmed: false },
-        { new: true }
-      );
-
-      // realtime emit
-      if (updatedRequest) {
-        io.to(`request:${updatedRequest._id}`).emit("payment:statusUpdated", {
-          requestId: updatedRequest._id,
-          paymentStatus: updatedRequest.paymentStatus,
-          isConfirmed: updatedRequest.isConfirmed,
-        });
-
-        io.to(`user:${updatedRequest.user}`).emit("payment:statusUpdated", {
-          requestId: updatedRequest._id,
-          paymentStatus: updatedRequest.paymentStatus,
-          isConfirmed: updatedRequest.isConfirmed,
-        });
-
-        io.to(`company:${updatedRequest.company}`).emit("payment:statusUpdated", {
-          requestId: updatedRequest._id,
-          paymentStatus: updatedRequest.paymentStatus,
-          isConfirmed: updatedRequest.isConfirmed,
-        });
-      }
-
       return res.status(400).json({ message: "Payment verification failed" });
     }
 
@@ -159,35 +93,19 @@ export const verifyPayment = async (req, res) => {
     payment.signature = razorpay_signature;
     await payment.save();
 
-    const updatedRequest = await Request.findByIdAndUpdate(
-      payment.requestId,
-      { paymentStatus: "paid", isConfirmed: true },
-      { new: true }
-    );
+    await Request.findByIdAndUpdate(payment.requestId, {
+      paymentStatus: "paid",
+      isConfirmed: true,
+    });
 
-    // realtime emit
-    if (updatedRequest) {
-      io.to(`request:${updatedRequest._id}`).emit("payment:statusUpdated", {
-        requestId: updatedRequest._id,
-        paymentStatus: updatedRequest.paymentStatus,
-        isConfirmed: updatedRequest.isConfirmed,
-      });
+    // ✅ REALTIME UPDATE
+    const io = getIO();
+    io.to(`request:${payment.requestId}`).emit("payment:confirmed", {
+      requestId: payment.requestId,
+    });
 
-      io.to(`user:${updatedRequest.user}`).emit("payment:statusUpdated", {
-        requestId: updatedRequest._id,
-        paymentStatus: updatedRequest.paymentStatus,
-        isConfirmed: updatedRequest.isConfirmed,
-      });
-
-      io.to(`company:${updatedRequest.company}`).emit("payment:statusUpdated", {
-        requestId: updatedRequest._id,
-        paymentStatus: updatedRequest.paymentStatus,
-        isConfirmed: updatedRequest.isConfirmed,
-      });
-    }
-
-    return res.json({ message: "Payment verified, booking confirmed" });
+    res.json({ message: "Payment verified, booking confirmed" });
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
 };

@@ -2,7 +2,7 @@ import Company from "../models/companyModel.js";
 import Request from "../models/requestModel.js";
 import cloudinary from "../config/cloudinary.js";
 import { SPOOKY_STATUS } from "../constants/spookyStatus.js";
-import { io } from "../index.js";
+import { getIO } from "../socket/socket.js";
 
 const calculateTrustScore = async (companyId) => {
   const completed = await Request.countDocuments({ company: companyId, status: "completed" });
@@ -186,10 +186,12 @@ export const updateRequestStatus = async (req, res) => {
       paymentStatus: request.paymentStatus,
       isConfirmed: request.isConfirmed,
     };
+    const io = getIO();
 
     io.to(`request:${request._id}`).emit("request:statusUpdated", payload);
     io.to(`user:${request.user}`).emit("request:statusUpdated", payload);
     io.to(`company:${request.company}`).emit("request:statusUpdated", payload);
+
 
     res.status(200).json({
       message: `🧙 Request has been ${newStatus}`,
