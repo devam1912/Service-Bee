@@ -23,7 +23,7 @@ export default function Nav() {
 
         <div className="flex items-center gap-3">
           <Link
-            to="/global"
+            to="/global-chat"
             className="text-sm font-semibold px-4 py-2 rounded-2xl
                        bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 transition"
           >

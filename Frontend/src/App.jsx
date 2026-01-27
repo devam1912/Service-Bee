@@ -1,17 +1,17 @@
 import { Routes, Route } from "react-router-dom";
-import Container from "./components/Container.jsx";
-import Nav from "./components/Nav.jsx";
-import Home from "./pages/Home.jsx";
-import GlobalChat from "./pages/GlobalChat.jsx";
+import Layout from "./components/Layout";
+import Home from "./pages/Home";
+import GlobalChat from "./pages/GlobalChat";
 
-export default function App() {
+function App() {
   return (
-    <Container>
-      <Nav />
-      <Routes>
+    <Routes>
+      <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/global" element={<GlobalChat />} />
-      </Routes>
-    </Container>
+        <Route path="/global-chat" element={<GlobalChat />} />
+      </Route>
+    </Routes>
   );
 }
+
+export default App;
