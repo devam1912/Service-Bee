@@ -1,15 +1,30 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import GlobalChat from "./pages/GlobalChat";
-import Home from "./pages/Home";
+import Login from "./pages/Login";
+import { useAuth } from "./context/AuthContext";
 
 export default function App() {
+  const { user } = useAuth();
+
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/global-chat" element={<GlobalChat />} />
-      </Route>
+      <Route path="/login" element={<Login />} />
+
+      <Route
+        path="/global"
+        element={
+          user ? (
+            <Layout>
+              <GlobalChat />
+            </Layout>
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+
+      <Route path="*" element={<Navigate to="/global" />} />
     </Routes>
   );
 }

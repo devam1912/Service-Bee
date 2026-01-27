@@ -3,21 +3,26 @@ import jwt from "jsonwebtoken";
 import User from "../models/UserModel.js";
 import validator from "validator";
 
+
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password, mobile, address, city } = req.body;
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Name, email and password are required" });
     }
 
-    if (!email || !validator.isEmail(email)) {
+    if (!validator.isEmail(email)) {
       return res.status(400).json({ message: "Enter a valid email" });
     }
 
-    if (!password || password.length < 8) {
-      return res.status(400).json({ message: "Enter a strong password" });
+    if (password.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
     }
 
     const hashPassword = await bcrypt.hash(password, 10);
@@ -28,16 +33,18 @@ export const registerUser = async (req, res) => {
       password: hashPassword,
       mobile,
       address,
-      city
+      city,
+      role: "user",
+      termsAccepted: false,
     });
 
-    res.status(201).json({
-      message: "User Signup Successfully",
-      userId: user._id
+    return res.status(201).json({
+      message: "User registered successfully",
+      userId: user._id,
     });
-
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("REGISTER ERROR:", error);
+    return res.status(500).json({ message: "Registration failed" });
   }
 };
 
@@ -60,23 +67,28 @@ export const loginUser = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id },
+      {
+        id: user._id,
+        role: user.role,
+      },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES }
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Login successful",
       token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        city: user.city
-      }
+        role: user.role,                 
+        termsAccepted: user.termsAccepted, 
+        city: user.city,
+      },
     });
-
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("LOGIN ERROR:", error);
+    return res.status(500).json({ message: "Login failed" });
   }
 };

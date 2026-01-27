@@ -1,22 +1,17 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:9876";
-
-let socket = null;
+const SOCKET_URL = "http://localhost:9876";
+let socket;
 
 export const connectSocket = (token) => {
   if (!socket) {
     socket = io(SOCKET_URL, {
-      auth: { token },
-      transports: ["websocket"], // ✅ IMPORTANT
-      autoConnect: false,
+      auth: {
+        token,
+        actorType: "user",
+      },
     });
   }
-
-  if (!socket.connected) {
-    socket.connect();
-  }
-
   return socket;
 };
 

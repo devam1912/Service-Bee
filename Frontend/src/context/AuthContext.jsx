@@ -1,30 +1,34 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import api from "../api/axios";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setLoading(false);
-      return;
+    const stored = localStorage.getItem("servicebee_auth");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setUser(parsed.user);
+      setToken(parsed.token);
     }
-
-    api.get("/users/profile")
-      .then((res) => setUser(res.data))
-      .catch(() => {
-        localStorage.removeItem("token");
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
   }, []);
 
+  const login = (data) => {
+    localStorage.setItem("servicebee_auth", JSON.stringify(data));
+    setUser(data.user);
+    setToken(data.token);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("servicebee_auth");
+    setUser(null);
+    setToken(null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
