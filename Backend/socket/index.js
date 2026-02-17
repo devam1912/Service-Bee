@@ -26,7 +26,8 @@ export default function initSocket(io) {
       });
 
 
-      io.to("global").emit("global:newMessage", msg);
+      const populatedMsg = await GlobalMessage.findById(msg._id).populate("senderId", "name");
+      io.to("global").emit("global:newMessage", populatedMsg);
     });
   });
 }

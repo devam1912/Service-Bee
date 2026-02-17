@@ -1,5 +1,7 @@
-import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 
@@ -20,7 +22,6 @@ import termsRoutes from "./routes/termsRoutes.js";
 import initSocket from "./socket/index.js";
 import { setIO } from "./socket/socket.js"; // ✅ ADD THIS
 
-dotenv.config();
 
 const app = express();
 app.use(express.json());

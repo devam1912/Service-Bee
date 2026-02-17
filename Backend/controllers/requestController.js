@@ -103,7 +103,8 @@ export const createRequest = async (req, res) => {
       spookyStatus: SPOOKY_STATUS.pending,
     });
   } catch (error) {
-    res.status(500).json({ message: "🕯️ Something dark went wrong on the server" });
+    console.error("Booking Error:", error);
+    res.status(500).json({ message: error.message || "🕯️ Something dark went wrong on the server" });
   }
 };
 
@@ -125,6 +126,23 @@ export const getCompanyRequests = async (req, res) => {
     res.status(200).json({ message: "🔮 All active hauntings have been revealed", requests: spookyRequests });
   } catch {
     res.status(500).json({ message: "🕯️ Failed to summon company requests" });
+  }
+};
+
+export const getUserRequests = async (req, res) => {
+  try {
+    const requests = await Request.find({ user: req.user._id })
+      .populate("company", "name email mobile city serviceCategory")
+      .sort({ createdAt: -1 });
+
+    const spookyRequests = requests.map((r) => ({
+      ...r.toObject(),
+      spookyStatus: SPOOKY_STATUS[r.status],
+    }));
+
+    res.status(200).json({ message: "🔮 Your summoned requests have been revealed", requests: spookyRequests });
+  } catch (error) {
+    res.status(500).json({ message: "🕯️ Failed to retrieve your requests" });
   }
 };
 

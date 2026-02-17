@@ -2,6 +2,7 @@ import express from "express";
 import {
   createRequest,
   getCompanyRequests,
+  getUserRequests,
   updateRequestStatus,
 } from "../controllers/requestController.js";
 import { protect } from "../middleware/authMiddleware.js";
@@ -23,6 +24,8 @@ router.post(
   validate(createRequestSchema),
   createRequest
 );
+
+router.get("/", strictLimiter, protect, getUserRequests);
 
 router.get("/company", strictLimiter, protect, getCompanyRequests);
 
