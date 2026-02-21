@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Creepster&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,7 +6,7 @@
 
 @layer base {
     body {
-        @apply bg-spooky-ghost text-gray-900 dark:bg-spooky-dark dark:text-gray-200 font-sans antialiased transition-colors duration-300;
+        @apply bg-petal-light text-petal-leaf dark:bg-petal-dark dark:text-gray-200 font-sans antialiased transition-colors duration-300;
     }
 
     h1,
@@ -15,7 +15,7 @@
     h4,
     h5,
     h6 {
-        @apply font-spooky text-spooky-purple dark:text-spooky-orange tracking-wider transition-colors duration-300;
+        @apply font-display text-petal-leaf dark:text-petal-rose tracking-tight transition-colors duration-300;
     }
 }
 
@@ -24,26 +24,12 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: #121212;
+    background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #7c3aed;
-    border-radius: 3px;
+    @apply bg-petal-rose rounded-full;
 }
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #ff7518;
-}
-
-.clip-path-triangle-right {
-    clip-path: polygon(0 0, 0% 100%, 100% 100%);
-}
-
-.clip-path-triangle-left {
-    clip-path: polygon(100% 0, 0 100%, 100% 100%);
-}
-
 
 :root {
     color-scheme: light;

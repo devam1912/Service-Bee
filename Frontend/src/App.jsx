@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import GlobalChat from "./pages/GlobalChat";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import VerifyOTP from "./pages/auth/VerifyOTP";
 import Home from "./pages/Home";
 import UserDashboard from "./pages/dashboard/UserDashboard";
 import CompanyDashboard from "./pages/dashboard/CompanyDashboard";
@@ -23,24 +24,21 @@ export default function App() {
             <Route path="/global-chat" element={<GlobalChat />} />
           </Route>
 
-          {/* User Dashboard */}
+          {/* Dashboard Routes (Redirecting to dynamic Home Hub) */}
           <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
-            <Route path="/dashboard" element={<UserDashboard />} />
+            <Route path="/dashboard" element={<Navigate to="/" />} />
           </Route>
-
-          {/* Company Dashboard */}
           <Route element={<ProtectedRoute allowedRoles={["company"]} />}>
-            <Route path="/dashboard/company" element={<CompanyDashboard />} />
+            <Route path="/dashboard/company" element={<Navigate to="/" />} />
           </Route>
-
-          {/* Admin Dashboard */}
           <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-            <Route path="/dashboard/admin" element={<AdminDashboard />} />
+            <Route path="/dashboard/admin" element={<Navigate to="/" />} />
           </Route>
         </Route>
 
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-otp" element={<VerifyOTP />} />
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

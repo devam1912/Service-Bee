@@ -3,14 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Card from "../../components/ui/Card";
-import { Ghost, Building2, User } from "lucide-react";
+import { Sparkles, Building2, User, ArrowRight } from "lucide-react";
 import axios from "axios";
 import { motion } from "framer-motion";
 
 export default function Signup() {
   const navigate = useNavigate();
   const [role, setRole] = useState("user");
-  const [step, setStep] = useState(1); // For multi-step company form if needed, currently 1
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,7 +20,6 @@ export default function Signup() {
     mobile: "",
     address: "",
     city: "",
-    // Company specific
     serviceCategory: "",
     description: "",
   });
@@ -40,19 +38,15 @@ export default function Signup() {
         ? "http://localhost:9876/api/users/register"
         : "http://localhost:9876/api/companies/register";
 
-      // Basic payload construction
       const payload = { ...formData };
 
-      // Default values for required backend fields if missing in basic form
       if (role === 'company') {
         if (!payload.services) payload.services = [];
         if (!payload.workingDays) payload.workingDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
       }
 
       await axios.post(endpoint, payload);
-
-      // On success, redirect to login
-      navigate("/login");
+      navigate(`/verify-otp?email=${formData.email}&role=${role}`);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || err.response?.data?.error || "Registration failed.");
@@ -62,71 +56,86 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-spooky-dark px-4 py-10 relative overflow-hidden">
-      {/* Background blobs */}
-      <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-spooky-green/10 rounded-full blur-[100px]" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-spooky-purple/10 rounded-full blur-[100px]" />
+    <div className="min-h-screen flex items-center justify-center bg-petal-light dark:bg-deep-moss px-4 py-20 relative overflow-hidden">
+      {/* Decorative floral elements */}
+      <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-petal-rose/10 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-petal-leaf/5 rounded-full blur-[120px]" />
 
-      <Card className="w-full max-w-2xl z-10">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4 group">
-            <Ghost className="w-10 h-10 text-spooky-green group-hover:text-spooky-purple transition-colors animate-float" />
+      <Card className="w-full max-w-2xl z-10 border-none shadow-2xl bg-white dark:bg-petal-muted/20 p-10 rounded-[40px]">
+        <div className="text-center mb-10">
+          <Link to="/" className="inline-flex items-center gap-2 mb-6 group bg-petal-rose/10 p-4 rounded-2xl">
+            <Sparkles className="w-8 h-8 text-petal-rose transition-transform group-hover:scale-110" />
           </Link>
-          <h2 className="text-3xl font-spooky text-white tracking-wider">Join Service Bee</h2>
-          <p className="text-gray-400 mt-2">Become part of the hive...</p>
+          <h2 className="text-4xl font-display font-black text-petal-leaf dark:text-white tracking-tight">Join the Hive</h2>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">Start your buzzing journey today</p>
         </div>
 
         {/* Role Toggles */}
-        <div className="flex p-1 bg-gray-800/50 rounded-lg mb-6 max-w-md mx-auto">
+        <div className="flex p-1.5 bg-gray-100 dark:bg-petal-muted/30 rounded-2xl mb-10 max-w-md mx-auto">
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${role === 'user' ? 'bg-spooky-purple text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${role === 'user' ? 'bg-white dark:bg-deep-moss text-petal-leaf dark:text-petal-rose shadow-md' : 'text-gray-500 hover:text-petal-leaf dark:hover:text-white'}`}
             onClick={() => setRole('user')}
           >
             <User size={18} /> User
           </button>
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${role === 'company' ? 'bg-spooky-orange text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${role === 'company' ? 'bg-white dark:bg-deep-moss text-petal-leaf dark:text-petal-rose shadow-md' : 'text-gray-500 hover:text-petal-leaf dark:hover:text-white'}`}
             onClick={() => setRole('company')}
           >
             <Building2 size={18} /> Company
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-sm text-center">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-2xl text-xs font-bold text-center"
+            >
               {error}
-            </div>
+            </motion.div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Full Name / Company Name" name="name" value={formData.name} onChange={handleChange} required />
-            <Input label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} required />
-            <Input label="Password" type="password" name="password" value={formData.password} onChange={handleChange} required />
-            <Input label="Mobile Number" name="mobile" value={formData.mobile} onChange={handleChange} required />
-            <Input label="City" name="city" value={formData.city} onChange={handleChange} required />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Input label="Full Name / Company Name" name="name" value={formData.name} onChange={handleChange} required className="rounded-xl border-gray-100 dark:border-petal-leaf/10" />
+            <Input label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} required className="rounded-xl border-gray-100 dark:border-petal-leaf/10" />
+            <Input label="Password" type="password" name="password" value={formData.password} onChange={handleChange} required className="rounded-xl border-gray-100 dark:border-petal-leaf/10" />
+            <Input label="Mobile Number" name="mobile" value={formData.mobile} onChange={handleChange} required className="rounded-xl border-gray-100 dark:border-petal-leaf/10" />
+            <Input label="City" name="city" value={formData.city} onChange={handleChange} required className="rounded-xl border-gray-100 dark:border-petal-leaf/10" />
 
             {role === 'company' && (
-              <>
-                <Input label="Service Category" name="serviceCategory" placeholder="e.g. Plumbing, Cleaning" value={formData.serviceCategory} onChange={handleChange} required />
-              </>
+              <Input label="Service Category" name="serviceCategory" placeholder="e.g. Gardening, Floristry" value={formData.serviceCategory} onChange={handleChange} required className="rounded-xl border-gray-100 dark:border-petal-leaf/10" />
             )}
           </div>
 
-          <Input label="Address" name="address" value={formData.address} onChange={handleChange} required className="w-full" />
+          <Input label="Full Address" name="address" value={formData.address} onChange={handleChange} required className="w-full rounded-xl border-gray-100 dark:border-petal-leaf/10" />
 
           {role === 'company' && (
-            <Input label="Description" name="description" placeholder="Describe your services..." value={formData.description} onChange={handleChange} className="w-full" />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider ml-1 px-1">Nature of Business</label>
+              <textarea
+                name="description"
+                className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-petal-muted/30 border border-gray-100 dark:border-petal-leaf/10 text-petal-leaf dark:text-white focus:outline-none focus:border-petal-rose focus:ring-1 focus:ring-petal-rose transition-all placeholder-gray-400 text-sm min-h-[100px]"
+                placeholder="Describe your floral services..."
+                value={formData.description}
+                onChange={handleChange}
+              />
+            </div>
           )}
 
-          <Button type="submit" className="w-full mt-6" disabled={loading}>
-            {loading ? "Creating Account..." : "Register"}
+          <Button type="submit" className="w-full mt-8 bg-petal-leaf dark:bg-petal-rose text-white dark:text-deep-moss py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-petal-rose/10 border-none" disabled={loading}>
+            {loading ? "Planting..." : (
+              <>
+                Register Now <ArrowRight size={20} />
+              </>
+            )}
           </Button>
         </form>
 
-        <p className="text-center text-gray-500 text-sm mt-6">
-          Already have an account?{" "}
-          <Link to="/login" className="text-spooky-purple hover:text-spooky-orange transition-colors underline">
+        <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-10 font-medium">
+          Already part of the hive?{" "}
+          <Link to="/login" className="text-petal-leaf dark:text-petal-rose hover:underline font-bold transition-all">
             Login here
           </Link>
         </p>
@@ -134,3 +143,4 @@ export default function Signup() {
     </div>
   );
 }
+

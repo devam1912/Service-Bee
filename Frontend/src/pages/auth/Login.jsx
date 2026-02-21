@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Card from "../../components/ui/Card";
-import { Ghost, Building2, User, Shield } from "lucide-react";
+import { Sparkles, Building2, User, Shield, ArrowRight } from "lucide-react";
 import axios from "axios";
 import { motion } from "framer-motion";
 
@@ -32,10 +32,8 @@ export default function Login() {
 
       const res = await axios.post(endpoint, formData);
 
-      // Token structure might differ, checking response
       const token = res.data.token;
-      const user = res.data.user || res.data.company || res.data.admin; // Adjust based on actual API response
-      // Add role to user object for context
+      const user = res.data.user || res.data.company || res.data.admin;
       const userData = { ...user, role: role };
 
       login(userData, token);
@@ -47,84 +45,93 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-spooky-dark px-4 relative overflow-hidden">
-      {/* Background blobs */}
-      <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-spooky-purple/20 rounded-full blur-[100px]" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-spooky-orange/20 rounded-full blur-[100px]" />
+    <div className="min-h-screen flex items-center justify-center bg-petal-light dark:bg-deep-moss px-4 relative overflow-hidden">
+      {/* Decorative floral elements */}
+      <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-petal-rose/10 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-petal-leaf/5 rounded-full blur-[120px]" />
 
-      <Card className="w-full max-w-md z-10">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4 group">
-            <Ghost className="w-10 h-10 text-spooky-orange group-hover:text-spooky-purple transition-colors animate-float" />
+      <Card className="w-full max-w-md z-10 border-none shadow-2xl bg-white dark:bg-petal-muted/20 p-8 rounded-[32px]">
+        <div className="text-center mb-10">
+          <Link to="/" className="inline-flex items-center gap-2 mb-6 group bg-petal-rose/10 p-4 rounded-2xl">
+            <Sparkles className="w-8 h-8 text-petal-rose transition-transform group-hover:scale-110" />
           </Link>
-          <h2 className="text-3xl font-spooky text-white tracking-wider">Welcome Back</h2>
-          <p className="text-gray-400 mt-2">Enter the hive...</p>
+          <h2 className="text-4xl font-display font-black text-petal-leaf dark:text-white tracking-tight">Bee Back</h2>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">Log into the hive</p>
         </div>
 
         {/* Role Toggles */}
-        <div className="flex p-1 bg-gray-800/50 rounded-lg mb-6">
+        <div className="flex p-1.5 bg-gray-100 dark:bg-petal-muted/30 rounded-2xl mb-8">
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${role === 'user' ? 'bg-spooky-purple text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${role === 'user' ? 'bg-white dark:bg-deep-moss text-petal-leaf dark:text-petal-rose shadow-md' : 'text-gray-500 hover:text-petal-leaf dark:hover:text-white'}`}
             onClick={() => setRole('user')}
           >
             <User size={18} /> User
           </button>
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${role === 'company' ? 'bg-spooky-orange text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${role === 'company' ? 'bg-white dark:bg-deep-moss text-petal-leaf dark:text-petal-rose shadow-md' : 'text-gray-500 hover:text-petal-leaf dark:hover:text-white'}`}
             onClick={() => setRole('company')}
           >
             <Building2 size={18} /> Company
           </button>
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${role === 'admin' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${role === 'admin' ? 'bg-white dark:bg-deep-moss text-petal-leaf dark:text-petal-rose shadow-md' : 'text-gray-500 hover:text-petal-leaf dark:hover:text-white'}`}
             onClick={() => setRole('admin')}
           >
             <Shield size={18} /> Admin
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-sm text-center"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-2xl text-xs font-bold text-center"
             >
               {error}
             </motion.div>
           )}
 
-          <Input
-            label="Email Address"
-            type="email"
-            name="email"
-            placeholder="you@example.com"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-          <Input
-            label="Password"
-            type="password"
-            name="password"
-            placeholder="••••••••"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
+          <div className="space-y-4">
+            <Input
+              label="Email Address"
+              type="email"
+              name="email"
+              placeholder="name@example.com"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="rounded-xl border-gray-100 dark:border-petal-leaf/10"
+            />
+            <Input
+              label="Password"
+              type="password"
+              name="password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="rounded-xl border-gray-100 dark:border-petal-leaf/10"
+            />
+          </div>
 
-          <Button type="submit" className="w-full mt-4" disabled={loading}>
-            {loading ? "Authenticating..." : "Login"}
+          <Button type="submit" className="w-full mt-6 bg-petal-leaf dark:bg-petal-rose text-white dark:text-deep-moss py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-petal-rose/10 border-none" disabled={loading}>
+            {loading ? "Polishing..." : (
+              <>
+                Sign In <ArrowRight size={20} />
+              </>
+            )}
           </Button>
         </form>
 
-        <p className="text-center text-gray-500 text-sm mt-6">
-          Don't have an account?{" "}
-          <Link to="/signup" className="text-spooky-purple hover:text-spooky-orange transition-colors underline">
-            Join the Swarm
+        <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-10 font-medium">
+          New to the hive?{" "}
+          <Link to="/signup" className="text-petal-leaf dark:text-petal-rose hover:underline font-bold transition-all">
+            Join the Hive
           </Link>
         </p>
       </Card>
     </div>
   );
 }
+

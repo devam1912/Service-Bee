@@ -2,129 +2,137 @@ import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { motion } from "framer-motion";
-import { Ghost, Zap, Shield, Users } from "lucide-react";
+import { Sparkles, Shield, Activity, Briefcase, ArrowRight } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import UserHome from "../components/home/UserHome";
+import CompanyHome from "../components/home/CompanyHome";
+import AdminHome from "../components/home/AdminHome";
 
-export default function Home() {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.3
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1
-    }
-  };
-
+const Hero = () => {
   return (
-    <div className="space-y-20 pb-20">
-      {/* Hero Section */}
-      <section className="relative text-center py-20 px-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative z-10"
-        >
-          <Ghost className="w-24 h-24 mx-auto text-spooky-orange mb-6 animate-float" />
-          <h1 className="text-5xl md:text-7xl font-spooky text-white mb-6 drop-shadow-[0_0_15px_rgba(255,117,24,0.5)]">
-            Service Bee
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-            The <span className="text-spooky-purple font-bold">spookiest</span> way to get things done.
-            Connect with phantom professionals for all your earthly needs.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+    <section className="relative pt-32 pb-24 overflow-hidden bg-petal-light dark:bg-deep-moss">
+      {/* Background Decorative Bloom */}
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-petal-rose/5 rounded-full blur-[150px] -translate-y-1/2 translate-x-1/4" />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-petal-leaf/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/4" />
+
+      <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="flex flex-col items-center text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="inline-flex items-center gap-2 bg-petal-rose/10 backdrop-blur-md px-4 py-2 rounded-full border border-petal-rose/20 mb-8"
+          >
+            <Sparkles className="w-4 h-4 text-petal-rose" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-petal-rose">Premium Service Bee Experience</span>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-6xl md:text-8xl font-display font-black text-petal-leaf dark:text-white leading-[0.9] tracking-tighter mb-8"
+          >
+            Your Curated <br />
+            <span className="text-petal-rose italic pr-2">Service Bee</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="max-w-2xl text-lg md:text-xl text-gray-500 dark:text-gray-400 font-medium leading-relaxed mb-12"
+          >
+            Connecting you with the finest local service providers.
+            Experience the efficiency of professional services in your beehive.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-col sm:flex-row gap-4"
+          >
             <Link to="/signup">
-              <Button variant="primary" className="text-lg px-8 py-3 w-full sm:w-auto">
+              <Button className="px-10 py-5 text-lg rounded-[24px] bg-petal-leaf hover:bg-petal-leaf/90 text-white shadow-2xl shadow-petal-leaf/20 border-none">
                 Join the Hive
               </Button>
             </Link>
-            <Link to="/login">
-              <Button variant="outline" className="text-lg px-8 py-3 w-full sm:w-auto">
-                Enter Portal
+            <Link to="/global-chat">
+              <Button variant="outline" className="px-10 py-5 text-lg rounded-[24px] border-petal-rose/30 text-petal-rose hover:bg-petal-rose/5 transition-all">
+                Explore Hive Chat
               </Button>
             </Link>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+};
 
-        {/* Background blobs for Hero */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-spooky-purple/5 blur-[100px] rounded-full pointer-events-none" />
+const FeatureCard = ({ icon: Icon, title, desc }) => (
+  <Card className="p-8 border-none bg-white dark:bg-petal-muted/20 shadow-xl rounded-[40px] hover:shadow-2xl transition-all group">
+    <div className="bg-petal-rose/10 w-16 h-16 rounded-3xl flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
+      <Icon className="text-petal-rose w-8 h-8" />
+    </div>
+    <h3 className="text-2xl font-black text-petal-leaf dark:text-white mb-3 tracking-tight">{title}</h3>
+    <p className="text-gray-500 dark:text-gray-400 font-medium leading-relaxed">{desc}</p>
+  </Card>
+);
+
+const Home = () => {
+  const { user } = useAuth();
+
+  if (user) {
+    if (user.role === 'admin') return <AdminHome />;
+    if (user.role === 'company') return <CompanyHome />;
+    return <UserHome />;
+  }
+
+  return (
+    <div className="bg-petal-light dark:bg-deep-moss min-h-screen">
+      <Hero />
+
+      <section className="py-32 max-w-7xl mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <FeatureCard
+            icon={Shield}
+            title="Vetted Providers"
+            desc="Only verified providers enter our hive. We ensure quality through strict standards."
+          />
+          <FeatureCard
+            icon={Activity}
+            title="Real-time Wisdom"
+            desc="AI-powered insights to help you find the perfect service for your specific needs."
+          />
+          <FeatureCard
+            icon={Briefcase}
+            title="Secure Exchange"
+            desc="Safe as a hive. Your service requests are handled with maximum security and care."
+          />
+        </div>
       </section>
 
-      {/* Features Section */}
-      <section className="max-w-6xl mx-auto px-4">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8"
-        >
-          <motion.div variants={itemVariants}>
-            <Card className="h-full text-center hover:border-spooky-purple/50">
-              <div className="bg-spooky-purple/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Zap className="text-spooky-purple w-8 h-8" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">Lightning Fast</h3>
-              <p className="text-gray-400">
-                Our service providers appear like apparitions exactly when you need them.
-              </p>
-            </Card>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <Card className="h-full text-center hover:border-spooky-green/50">
-              <div className="bg-spooky-green/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="text-spooky-green w-8 h-8" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">Secure & Safe</h3>
-              <p className="text-gray-400">
-                Protected by ancient wards and Razorpay encryption. No tricks, just treats.
-              </p>
-            </Card>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <Card className="h-full text-center hover:border-spooky-orange/50">
-              <div className="bg-spooky-orange/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="text-spooky-orange w-8 h-8" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">Community Driven</h3>
-              <p className="text-gray-400">
-                Join a global swarm of users and providers. Chat with spirits world-wide.
-              </p>
-            </Card>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* Call to Action */}
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto bg-gradient-to-r from-spooky-purple/20 to-spooky-orange/20 rounded-3xl p-10 text-center border border-gray-800 relative overflow-hidden">
+      {/* CTA Section */}
+      <section className="px-4 py-20">
+        <div className="max-w-5xl mx-auto bg-petal-leaf dark:bg-petal-muted/30 rounded-[40px] p-12 md:p-20 text-center relative overflow-hidden shadow-2xl border border-petal-leaf/20">
           <div className="relative z-10">
-            <h2 className="text-3xl md:text-4xl font-spooky text-white mb-4">Ready to get summoned?</h2>
-            <p className="text-gray-300 mb-8 max-w-xl mx-auto">
-              Whether you need a plumber, a cleaner, or a ghostbuster, Service Bee has you covered.
+            <h2 className="text-4xl md:text-5xl font-display font-black text-white mb-6 tracking-tight">Ready to Get Started?</h2>
+            <p className="text-white/70 mb-12 max-w-xl mx-auto text-lg leading-relaxed font-medium">
+              Join thousands of happy souls who have improved their lives with Service Bee.
             </p>
             <Link to="/signup">
-              <Button variant="secondary" className="px-8 py-3 text-lg shadow-[0_0_20px_rgba(255,117,24,0.4)]">
-                Get Started
+              <Button className="bg-petal-rose text-white hover:opacity-90 px-12 py-5 text-xl font-black rounded-[24px] flex items-center gap-3 mx-auto shadow-2xl shadow-petal-rose/30 border-none">
+                Get Started Now <ArrowRight size={24} />
               </Button>
             </Link>
           </div>
 
-          {/* Animated overlay */}
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.com/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
+          {/* Subtle decoration */}
+          <div className="absolute -top-20 -right-20 w-80 h-80 bg-petal-rose/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
         </div>
       </section>
     </div>
   );
-}
+};
+
+export default Home;

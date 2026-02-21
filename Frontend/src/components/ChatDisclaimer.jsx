@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import Button from "./ui/Button";
-import { Skull, Scroll } from "lucide-react";
+import { ShieldCheck, FileText, Check } from "lucide-react";
 
 export default function ChatDisclaimer() {
     const [isOpen, setIsOpen] = useState(false);
@@ -44,46 +44,51 @@ export default function ChatDisclaimer() {
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-bee-accent/80 backdrop-blur-md p-4">
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.95, y: 30 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="bg-gray-900 border border-spooky-purple rounded-xl shadow-[0_0_30px_rgba(124,58,237,0.3)] max-w-md w-full p-6 relative overflow-hidden"
+                        exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                        className="bg-white dark:bg-bee-muted border border-gray-100 dark:border-gray-800 rounded-[40px] shadow-2xl max-w-lg w-full p-10 relative overflow-hidden"
                     >
-                        {/* Spooky background effects */}
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-spooky-purple to-transparent opacity-50"></div>
-                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-spooky-purple/10 rounded-full blur-3xl"></div>
-                        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-spooky-orange/10 rounded-full blur-3xl"></div>
+                        {/* Bee background effects */}
+                        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-bee-yellow to-transparent opacity-50"></div>
+                        <div className="absolute -top-20 -right-20 w-48 h-48 bg-bee-yellow/5 rounded-full blur-3xl"></div>
+                        <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl"></div>
 
                         <div className="relative z-10 text-center">
-                            <div className="mx-auto w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4 border border-gray-700 shadow-inner">
-                                <Scroll className="text-spooky-orange w-8 h-8" />
+                            <div className="mx-auto w-20 h-20 bg-bee-yellow/10 rounded-[28px] flex items-center justify-center mb-8 border border-bee-yellow/20">
+                                <ShieldCheck className="text-bee-yellow w-10 h-10" />
                             </div>
 
-                            <h2 className="text-2xl font-spooky text-white mb-2">Soul Contract</h2>
+                            <h2 className="text-3xl font-display font-black text-bee-accent dark:text-white mb-3 tracking-tight">Community Standards</h2>
+                            <p className="text-gray-500 font-medium mb-8">Please review our guidelines to ensure a safe and productive environment for all members.</p>
 
-                            <div className="bg-gray-800/50 rounded-lg p-4 mb-6 text-left border border-gray-700">
-                                <p className="text-gray-300 text-sm mb-3">
-                                    By entering this spirited realm, you agree to the following covenant:
-                                </p>
-                                <ul className="text-gray-400 text-sm space-y-2 list-disc list-inside">
-                                    <li>Respect all entities, living or otherwise.</li>
-                                    <li>Refrain from vulgar, hateful, or harmonious speech.</li>
-                                    <li>Do not spam or flood the connection.</li>
+                            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[32px] p-8 mb-10 text-left border border-gray-100 dark:border-gray-800">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-bee-yellow mb-4">The Hive Covenant</h4>
+                                <ul className="text-gray-600 dark:text-gray-300 text-sm space-y-4 font-medium">
+                                    <li className="flex gap-3">
+                                        <Check size={16} className="text-bee-yellow flex-shrink-0 mt-0.5" />
+                                        <span>Maintain professional and respectful conduct at all times.</span>
+                                    </li>
+                                    <li className="flex gap-3">
+                                        <Check size={16} className="text-bee-yellow flex-shrink-0 mt-0.5" />
+                                        <span>Protect your privacy and the privacy of other members.</span>
+                                    </li>
+                                    <li className="flex gap-3">
+                                        <Check size={16} className="text-bee-yellow flex-shrink-0 mt-0.5" />
+                                        <span>Use the platform only for legitimate service-related communication.</span>
+                                    </li>
                                 </ul>
-                                <p className="text-xs text-gray-500 mt-4 italic">
-                                    Violation of these terms may result in banishment to the void.
-                                </p>
                             </div>
 
                             <Button
                                 onClick={handleAccept}
                                 variant="primary"
-                                className="w-full justify-center group"
+                                className="w-full justify-center !py-5 rounded-2xl shadow-bee-yellow/20 text-lg group"
                             >
-                                <Skull className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
-                                I Bind My Soul to These Terms
+                                <Check className="w-5 h-5 mr-3 group-hover:scale-125 transition-transform" />
+                                Accept and Continue
                             </Button>
                         </div>
                     </motion.div>
@@ -92,3 +97,4 @@ export default function ChatDisclaimer() {
         </AnimatePresence>
     );
 }
+

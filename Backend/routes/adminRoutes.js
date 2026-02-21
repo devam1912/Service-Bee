@@ -9,6 +9,29 @@ const router = express.Router();
 
 router.post("/login", adminLogin);
 
+router.get("/stats", protectAdmin, async (req, res) => {
+  try {
+    const userCount = await User.countDocuments();
+    const companyCount = await Company.countDocuments({ isVerified: true });
+    const pendingCount = await Company.countDocuments({ isVerified: false });
+
+    // Profit Calculation Logic: Sum of all request prices * platform fee (e.g. 10%)
+    const requests = await Request.find({ status: "completed" });
+    const totalRevenue = requests.reduce((sum, req) => sum + (req.price || 0), 0);
+    const platformProfit = totalRevenue * 0.10; // 10% commission
+
+    res.json({
+      users: userCount,
+      companies: companyCount,
+      pending: pendingCount,
+      profit: platformProfit.toFixed(2),
+      revenue: totalRevenue.toFixed(2)
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch stats" });
+  }
+});
+
 router.get("/users", protectAdmin, async (_, res) => {
   const users = await User.find().select("-password");
   res.json(users);

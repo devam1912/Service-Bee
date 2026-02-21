@@ -1,7 +1,7 @@
 export default function Input({ label, type = "text", name, value, onChange, placeholder, required = false, className = "" }) {
     return (
-        <div className={`flex flex-col gap-1 ${className}`}>
-            {label && <label className="text-gray-400 text-sm font-medium ml-1">{label}</label>}
+        <div className={`flex flex-col gap-1.5 ${className}`}>
+            {label && <label className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider ml-1">{label}</label>}
             <input
                 type={type}
                 name={name}
@@ -9,8 +9,9 @@ export default function Input({ label, type = "text", name, value, onChange, pla
                 onChange={onChange}
                 placeholder={placeholder}
                 required={required}
-                className="px-4 py-2 rounded-lg bg-spooky-card border border-gray-700 text-gray-200 focus:outline-none focus:border-spooky-purple focus:ring-1 focus:ring-spooky-purple transition-all duration-300 placeholder-gray-600"
+                className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 text-bee-accent dark:text-white focus:outline-none focus:border-bee-yellow focus:ring-1 focus:ring-bee-yellow transition-all duration-300 placeholder-gray-400 text-sm shadow-inner"
             />
         </div>
     );
 }
+

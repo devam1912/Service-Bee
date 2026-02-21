@@ -1,26 +1,27 @@
 import express from "express";
-import { registerCompany, loginCompany } from "../controllers/companyController.js";
+import { registerCompany, loginCompany, verifyCompanyOTP } from "../controllers/companyController.js";
 import Company from "../models/companyModel.js";
 import { SPOOKY_AURA } from "../constants/spookyTrust.js";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
-  const companies = await Company.find({ isVerified: true }).sort({ trustScore: -1 });
+  try {
+    const { city } = req.query;
+    const filter = { isVerified: true };
+    if (city) {
+      filter.city = new RegExp(city, 'i'); // Case-insensitive city search
+    }
 
-  const hauntedCompanies = companies.map(c => {
-    let aura = SPOOKY_AURA.CURSED;
-    if (c.trustScore >= 80) aura = SPOOKY_AURA.ASCENDED;
-    else if (c.trustScore >= 50) aura = SPOOKY_AURA.POSSESSED;
-    else if (c.trustScore >= 20) aura = SPOOKY_AURA.HAUNTED;
-
-    return { ...c.toObject(), aura };
-  });
-
-  res.json({ companies: hauntedCompanies });
+    const companies = await Company.find(filter).sort({ trustScore: -1 });
+    res.json({ companies });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch companies" });
+  }
 });
 
 router.post("/register", registerCompany);
 router.post("/login", loginCompany);
+router.post("/verify-otp", verifyCompanyOTP);
 
 export default router;

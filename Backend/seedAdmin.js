@@ -11,18 +11,19 @@ const seedAdmin = async () => {
         await connectDB();
 
         const existingAdmin = await Admin.findOne({ email: "admin@servicebee.com" });
-        if (existingAdmin) {
-            console.log("Admin already exists");
-            return;
-        }
-
         const hashedPassword = await bcrypt.hash("admin123", 10);
-        await Admin.create({
-            email: "admin@servicebee.com",
-            password: hashedPassword
-        });
 
-        console.log("Admin created successfully");
+        if (existingAdmin) {
+            existingAdmin.password = hashedPassword;
+            await existingAdmin.save();
+            console.log("Admin password updated successfully");
+        } else {
+            await Admin.create({
+                email: "admin@servicebee.com",
+                password: hashedPassword
+            });
+            console.log("Admin created successfully");
+        }
     } catch (error) {
         console.error("Error seeding admin:", error);
     } finally {

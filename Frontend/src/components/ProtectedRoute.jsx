@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 export default function ProtectedRoute({ allowedRoles }) {
     const { user, loading } = useAuth();
 
-    if (loading) return <div className="text-center mt-20 text-spooky-purple animate-pulse">Summoning spirits...</div>;
+    if (loading) return <div className="text-center mt-20 text-bee-yellow animate-pulse font-bold tracking-tight uppercase text-xs">Syncing with the Hive...</div>;
 
     if (!user) return <Navigate to="/login" replace />;
 
@@ -14,3 +14,4 @@ export default function ProtectedRoute({ allowedRoles }) {
 
     return <Outlet />;
 }
+

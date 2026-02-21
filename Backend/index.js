@@ -18,6 +18,8 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import globalChatRoutes from "./routes/globalChatRoutes.js";
 import adminGlobalChatRoutes from "./routes/adminGlobalChatRoutes.js";
 import termsRoutes from "./routes/termsRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
+import privateChatRoutes from "./routes/privateChatRoutes.js";
 
 import initSocket from "./socket/index.js";
 import { setIO } from "./socket/socket.js"; // ✅ ADD THIS
@@ -38,6 +40,8 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/global-chat", globalChatRoutes);
 app.use("/api/admin/global-chat", adminGlobalChatRoutes);
 app.use("/api/terms", termsRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/private-chat", privateChatRoutes);
 
 // DB
 connectDB();

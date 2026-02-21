@@ -25,9 +25,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
-    navigate(userData.role === "company" ? "/dashboard/company" : "/dashboard");
-  };
 
+    navigate("/");
+  };
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");

@@ -1,14 +1,8 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Company from "../models/companyModel.js";
-import { SPOOKY_AURA } from "../constants/spookyTrust.js";
-
-const getAuraLevel = (score) => {
-  if (score >= 80) return SPOOKY_AURA.ASCENDED;
-  if (score >= 50) return SPOOKY_AURA.POSSESSED;
-  if (score >= 20) return SPOOKY_AURA.HAUNTED;
-  return SPOOKY_AURA.CURSED;
-};
+import { sendEmail } from "../utils/email.js";
+import validator from "validator";
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -29,8 +23,12 @@ export const registerCompany = async (req, res) => {
       description,
     } = req.body;
 
-    if (!email || !password || !name) {
+    if (!email || !password || !name || !mobile) {
       return res.status(400).json({ message: "Required fields missing" });
+    }
+
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ message: "Enter a valid email" });
     }
 
     const existingCompany = await Company.findOne({ email });
@@ -39,6 +37,10 @@ export const registerCompany = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Generate OTP for registration verification
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     const company = await Company.create({
       name,
@@ -50,11 +52,23 @@ export const registerCompany = async (req, res) => {
       city,
       description,
       role: "company",
+      otp,
+      otpExpires,
+      isVerified: false
     });
 
+    // Send OTP via Email
+    await sendEmail(
+      company.email,
+      "Welcome to Service Bee - Verify Your Business",
+      `Your business verification OTP is: ${otp}.`,
+      `<h1>Welcome to Service Bee</h1><p>Thank you for partnering with us! Your business verification OTP is: <strong>${otp}</strong>.</p>`
+    );
+
     res.status(201).json({
-      message: "Company registered successfully",
+      message: "Company registered. Please verify your OTP.",
       companyId: company._id,
+      email: company.email
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -75,7 +89,56 @@ export const loginCompany = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    res.status(200).json({
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+    company.otp = otp;
+    company.otpExpires = otpExpires;
+    await company.save();
+
+    // Send OTP via Email
+    const emailSent = await sendEmail(
+      company.email,
+      "Company Login OTP - Service Bee",
+      `Your login OTP is: ${otp}. It expires in 10 minutes.`,
+      `<h1>Company Verification</h1><p>Your login OTP is: <strong>${otp}</strong>. It expires in 10 minutes.</p>`
+    );
+
+    if (!emailSent) {
+      return res.status(500).json({ message: "Failed to send OTP email" });
+    }
+
+    return res.status(200).json({
+      message: "OTP sent to your email",
+      email: company.email
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const verifyCompanyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    const company = await Company.findOne({ email });
+
+    if (!company || company.otp !== otp || company.otpExpires < new Date()) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // Clear OTP and verify
+    company.otp = null;
+    company.otpExpires = null;
+    company.isVerified = true;
+    await company.save();
+
+    return res.status(200).json({
       message: "Company login successful",
       token: generateToken(company._id),
       company: {
@@ -89,3 +152,4 @@ export const loginCompany = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+

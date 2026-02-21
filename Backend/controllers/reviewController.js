@@ -59,7 +59,7 @@ export const createReview = async (req, res) => {
     //calculating avg
     const avgRating =
       reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-      
+
     //find and update the company field
     await Company.findByIdAndUpdate(request.company, {
       rating: avgRating.toFixed(1),
@@ -72,5 +72,18 @@ export const createReview = async (req, res) => {
   } catch (error) {
     console.error("Review error", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getCompanyReviews = async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const reviews = await Review.find({ company: companyId })
+      .populate("user", "name")
+      .sort("-createdAt");
+
+    res.json(reviews);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch reviews" });
   }
 };

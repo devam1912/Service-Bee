@@ -5,19 +5,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        spooky: {
-          dark: "#121212",
-          card: "#1E1E1E",
-          purple: "#7c3aed",
-          orange: "#ff7518",
-          green: "#10b981",
-          red: "#ef4444",
-          ghost: "#f8f9fa",
-        },
+        "petal-rose": "#FF8E9C",
+        "petal-leaf": "#3A5A40",
+        "petal-moss": "#1B2620",
+        "petal-light": "#FDFBFB",
+        "petal-clay": "#4A4E4D",
+        "petal-dark": "#1B2620",
+        "petal-muted": "#4A4E4D",
+        "deep-moss": "#1B2620",
+        "soft-petal": "#FDFBFB",
       },
       animation: {
         float: "float 3s ease-in-out infinite",
-        "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "fade-in": "fadeIn 0.5s ease-out forwards",
       },
       keyframes: {
@@ -26,15 +25,16 @@ export default {
           "50%": { transform: "translateY(-10px)" },
         },
         fadeIn: {
-            "0%": { opacity: "0" },
-            "100%": { opacity: "1" },
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
         }
       },
       fontFamily: {
-        spooky: ['"Creepster"', 'cursive'],
         sans: ['"Inter"', 'sans-serif'],
+        display: ['"Outfit"', 'sans-serif'],
       }
     },
   },
   plugins: [],
 };
+

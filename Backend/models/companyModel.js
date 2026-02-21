@@ -52,7 +52,15 @@ const companySchema = new mongoose.Schema({
   trustScore: { type: Number, default: 0 },
   rating: { type: Number, default: 0 },
   role: { type: String, enum: ["company"], default: "company" },
-  isVerified: { type: Boolean, default: false }
+  isVerified: { type: Boolean, default: false },
+  otp: {
+    type: String,
+    default: null
+  },
+  otpExpires: {
+    type: Date,
+    default: null
+  }
 }, { timestamps: true });
 
 const Company = mongoose.models.Company || mongoose.model("Company", companySchema);
