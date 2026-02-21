@@ -1,7 +1,7 @@
 import express from "express";
-import { registerCompany, loginCompany, verifyCompanyOTP } from "../controllers/companyController.js";
+import { registerCompany, loginCompany, verifyCompanyOTP, getCompanyProfile } from "../controllers/companyController.js";
 import Company from "../models/companyModel.js";
-import { SPOOKY_AURA } from "../constants/spookyTrust.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -13,7 +13,8 @@ router.get("/", async (req, res) => {
       filter.city = new RegExp(city, 'i'); // Case-insensitive city search
     }
 
-    const companies = await Company.find(filter).sort({ trustScore: -1 });
+    // Sort by isPremium first (priority), then by trustScore
+    const companies = await Company.find(filter).sort({ isPremium: -1, trustScore: -1 });
     res.json({ companies });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch companies" });
@@ -23,5 +24,6 @@ router.get("/", async (req, res) => {
 router.post("/register", registerCompany);
 router.post("/login", loginCompany);
 router.post("/verify-otp", verifyCompanyOTP);
+router.get("/profile", protect, getCompanyProfile);
 
 export default router;

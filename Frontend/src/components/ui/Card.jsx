@@ -1,16 +1,20 @@
 import { motion } from "framer-motion";
+import { cn } from "../../lib/utils";
 
 export default function Card({ children, className = "", hoverEffect = true, ...props }) {
     return (
         <motion.div
             {...props}
-            className={`bg-white dark:bg-bee-muted rounded-[32px] p-6 border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden ${className}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+                "bg-white dark:bg-bee-muted rounded-[32px] p-6 border border-gray-100 dark:border-petal-leaf/20 shadow-xl relative overflow-hidden transition-colors duration-300",
+                className
+            )}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
             whileHover={hoverEffect ? {
-                y: -5,
-                boxShadow: "0 20px 40px -20px rgba(253, 184, 19, 0.2)",
-                borderColor: "rgba(253, 184, 19, 0.2)"
+                y: -8,
+                boxShadow: "0 25px 50px -12px rgba(255, 142, 156, 0.15)",
+                borderColor: "rgba(255, 142, 156, 0.3)"
             } : {}}
             transition={{ duration: 0.3 }}
         >

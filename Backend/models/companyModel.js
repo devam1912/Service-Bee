@@ -53,6 +53,11 @@ const companySchema = new mongoose.Schema({
   rating: { type: Number, default: 0 },
   role: { type: String, enum: ["company"], default: "company" },
   isVerified: { type: Boolean, default: false },
+
+  // Premium Subscription Fields
+  isPremium: { type: Boolean, default: false },
+  premiumExpiresAt: { type: Date, default: null },
+
   otp: {
     type: String,
     default: null
@@ -65,4 +70,3 @@ const companySchema = new mongoose.Schema({
 
 const Company = mongoose.models.Company || mongoose.model("Company", companySchema);
 export default Company;
-

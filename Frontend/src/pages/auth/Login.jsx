@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -9,6 +9,7 @@ import axios from "axios";
 import { motion } from "framer-motion";
 
 export default function Login() {
+  const navigate = useNavigate();
   const { login } = useAuth();
   const [role, setRole] = useState("user"); // 'user' or 'company'
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -30,7 +31,15 @@ export default function Login() {
       else if (role === "company") endpoint = "http://localhost:9876/api/companies/login";
       else endpoint = "http://localhost:9876/api/admin/login";
 
+      console.log("LOGIN ATTEMPT:", { email: formData.email, role });
       const res = await axios.post(endpoint, formData);
+      console.log("LOGIN RESPONSE:", res.data);
+
+      if (res.data.message?.toLowerCase().includes("otp")) {
+        // Redirect to OTP verification
+        navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}&role=${role}`);
+        return;
+      }
 
       const token = res.data.token;
       const user = res.data.user || res.data.company || res.data.admin;

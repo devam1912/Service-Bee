@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import UserHome from "../components/home/UserHome";
 import CompanyHome from "../components/home/CompanyHome";
 import AdminHome from "../components/home/AdminHome";
+import BeeLogo from "../components/ui/BeeLogo";
 
 const Hero = () => {
   return (
@@ -22,7 +23,7 @@ const Hero = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="inline-flex items-center gap-2 bg-petal-rose/10 backdrop-blur-md px-4 py-2 rounded-full border border-petal-rose/20 mb-8"
           >
-            <Sparkles className="w-4 h-4 text-petal-rose" />
+            <BeeLogo className="w-4 h-4" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-petal-rose">Premium Service Bee Experience</span>
           </motion.div>
 
@@ -32,7 +33,7 @@ const Hero = () => {
             className="text-6xl md:text-8xl font-display font-black text-petal-leaf dark:text-white leading-[0.9] tracking-tighter mb-8"
           >
             Your Curated <br />
-            <span className="text-petal-rose italic pr-2">Service Bee</span>
+            <span className="text-petal-rose italic pr-2"><span className="text-petal-moss dark:text-white not-italic">Service</span> Bee</span>
           </motion.h1>
 
           <motion.p

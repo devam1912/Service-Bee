@@ -30,8 +30,10 @@ export const protect = async (req, res, next) => {
     }
 
     req.user = account;
+    console.log(`[AUTH] Authenticated ${account.role}: ${account.email}`);
     next();
   } catch (error) {
+    console.error("[AUTH ERROR]", error.message);
     return res.status(401).json({ message: "Not authorized, token invalid" });
   }
 };

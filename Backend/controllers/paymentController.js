@@ -2,10 +2,12 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Payment from "../models/paymentModel.js";
 import Request from "../models/requestModel.js";
-import { getIO } from "../socket/socket.js"; // ✅ FIX
+import Subscription from "../models/subscriptionModel.js";
+import Company from "../models/companyModel.js";
+import { getIO } from "../socket/socket.js";
 
 /**
- * Lazy-init Razorpay so server doesn't crash on startup
+ * Lazy-init Razorpay
  */
 const getRazorpay = () => {
   const key_id = process.env.RAZORPAY_KEY_ID;
@@ -98,13 +100,114 @@ export const verifyPayment = async (req, res) => {
       isConfirmed: true,
     });
 
-    // ✅ REALTIME UPDATE
     const io = getIO();
     io.to(`request:${payment.requestId}`).emit("payment:confirmed", {
       requestId: payment.requestId,
     });
 
     res.json({ message: "Payment verified, booking confirmed" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * PREMIUM SUBSCRIPTION LOGIC
+ */
+
+// POST /api/payments/premium/create-order
+export const createPremiumOrder = async (req, res) => {
+  try {
+    if (req.user.role !== "company") {
+      return res.status(403).json({ message: "Only providers can subscribe to premium" });
+    }
+
+    const razorpay = getRazorpay();
+    const { plan } = req.body; // monthly, semi-annual, yearly
+
+    let amount = 0;
+    let durationDays = 0;
+
+    if (plan === "monthly") {
+      amount = 2000;
+      durationDays = 30;
+    } else if (plan === "semi-annual") {
+      amount = 10000;
+      durationDays = 180;
+    } else if (plan === "yearly") {
+      amount = 20000;
+      durationDays = 365;
+    } else {
+      return res.status(400).json({ message: "Invalid subscription plan" });
+    }
+
+    const order = await razorpay.orders.create({
+      amount: amount * 100,
+      currency: "INR",
+      receipt: `premium_${req.user._id}_${Date.now()}`,
+    });
+
+    await Subscription.create({
+      companyId: req.user._id,
+      orderId: order.id,
+      amount,
+      plan,
+      durationDays,
+      status: "created",
+    });
+
+    res.json({
+      keyId: process.env.RAZORPAY_KEY_ID,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      plan
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/payments/premium/verify
+export const verifyPremiumPayment = async (req, res) => {
+  try {
+    const { orderId, razorpay_payment_id, razorpay_signature } = req.body;
+
+    const subscription = await Subscription.findOne({ orderId });
+    if (!subscription) return res.status(404).json({ message: "Subscription record not found" });
+
+    if (String(subscription.companyId) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const body = `${orderId}|${razorpay_payment_id}`;
+    const expected = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest("hex");
+
+    if (expected !== razorpay_signature) {
+      subscription.status = "failed";
+      await subscription.save();
+      return res.status(400).json({ message: "Signature verification failed" });
+    }
+
+    // Success
+    subscription.status = "paid";
+    subscription.paymentId = razorpay_payment_id;
+    subscription.signature = razorpay_signature;
+    await subscription.save();
+
+    // Update Company Premium Status
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + subscription.durationDays);
+
+    await Company.findByIdAndUpdate(subscription.companyId, {
+      isPremium: true,
+      premiumExpiresAt: expirationDate
+    });
+
+    res.json({ message: "Premium subscription activated successfully!", expiresAt: expirationDate });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

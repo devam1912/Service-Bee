@@ -132,10 +132,9 @@ export const verifyCompanyOTP = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
-    // Clear OTP and verify
+    // Clear OTP (Keep isVerified false until admin approved)
     company.otp = null;
     company.otpExpires = null;
-    company.isVerified = true;
     await company.save();
 
     return res.status(200).json({
@@ -146,6 +145,9 @@ export const verifyCompanyOTP = async (req, res) => {
         name: company.name,
         email: company.email,
         role: company.role,
+        city: company.city,
+        trustScore: company.trustScore,
+        rating: company.rating
       },
     });
   } catch (error) {
@@ -153,3 +155,14 @@ export const verifyCompanyOTP = async (req, res) => {
   }
 };
 
+export const getCompanyProfile = async (req, res) => {
+  try {
+    const company = await Company.findById(req.user._id).select("-password -otp -otpExpires");
+    if (!company) {
+      return res.status(404).json({ message: "Company profile not found" });
+    }
+    res.status(200).json({ company });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch profile" });
+  }
+};

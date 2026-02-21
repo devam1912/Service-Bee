@@ -14,35 +14,33 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Home />} />
 
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoute allowedRoles={["user", "company", "admin"]} />}>
-            <Route path="/global-chat" element={<GlobalChat />} />
-          </Route>
-
-          {/* Dashboard Routes (Redirecting to dynamic Home Hub) */}
-          <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
-            <Route path="/dashboard" element={<Navigate to="/" />} />
-          </Route>
-          <Route element={<ProtectedRoute allowedRoles={["company"]} />}>
-            <Route path="/dashboard/company" element={<Navigate to="/" />} />
-          </Route>
-          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-            <Route path="/dashboard/admin" element={<Navigate to="/" />} />
-          </Route>
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute allowedRoles={["user", "company", "admin"]} />}>
+          <Route path="/global-chat" element={<GlobalChat />} />
         </Route>
 
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/verify-otp" element={<VerifyOTP />} />
+        {/* Dashboard Routes (Redirecting to dynamic Home Hub) */}
+        <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
+          <Route path="/dashboard" element={<Navigate to="/" />} />
+        </Route>
+        <Route element={<ProtectedRoute allowedRoles={["company"]} />}>
+          <Route path="/dashboard/company" element={<Navigate to="/" />} />
+        </Route>
+        <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+          <Route path="/dashboard/admin" element={<Navigate to="/" />} />
+        </Route>
+      </Route>
 
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </AuthProvider>
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/verify-otp" element={<VerifyOTP />} />
+
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
   );
 }
 

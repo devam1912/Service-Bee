@@ -7,7 +7,10 @@ import { ShieldCheck, ArrowRight, RefreshCw } from "lucide-react";
 import axios from "axios";
 import { motion } from "framer-motion";
 
+import { useAuth } from "../../context/AuthContext";
+
 export default function VerifyOTP() {
+    const { login } = useAuth();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const email = searchParams.get("email");
@@ -38,10 +41,13 @@ export default function VerifyOTP() {
 
             const res = await axios.post(endpoint, { email, otp });
 
-            setMessage("Verification successful! Redirecting to login...");
+            setMessage("Verification successful! Welcoming to the hive...");
+            const token = res.data.token;
+            const userData = res.data.user || res.data.company;
+
             setTimeout(() => {
-                navigate("/login");
-            }, 2000);
+                login({ ...userData, role }, token);
+            }, 1500);
         } catch (err) {
             setError(err.response?.data?.message || "Verification failed. Please check your OTP.");
         } finally {
@@ -107,15 +113,18 @@ export default function VerifyOTP() {
                         </motion.div>
                     )}
 
-                    <Input
-                        label="Verification Code"
-                        placeholder="000000"
-                        maxLength={6}
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        className="text-center text-2xl tracking-[1em] font-display font-bold rounded-2xl"
-                        required
-                    />
+                    <div className="space-y-4">
+                        <Input
+                            label="Verification Code"
+                            placeholder="000000"
+                            maxLength={6}
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            className="text-center"
+                            inputClassName="text-center text-2xl tracking-[0.5em] font-display font-bold"
+                            required
+                        />
+                    </div>
 
                     <Button
                         type="submit"

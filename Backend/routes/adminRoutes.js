@@ -4,6 +4,7 @@ import { protectAdmin } from "../middleware/adminMiddleware.js";
 import Company from "../models/companyModel.js";
 import User from "../models/UserModel.js";
 import Request from "../models/requestModel.js";
+import Subscription from "../models/subscriptionModel.js";
 
 const router = express.Router();
 
@@ -17,15 +18,22 @@ router.get("/stats", protectAdmin, async (req, res) => {
 
     // Profit Calculation Logic: Sum of all request prices * platform fee (e.g. 10%)
     const requests = await Request.find({ status: "completed" });
-    const totalRevenue = requests.reduce((sum, req) => sum + (req.price || 0), 0);
-    const platformProfit = totalRevenue * 0.10; // 10% commission
+    const totalRequestRevenue = requests.reduce((sum, req) => sum + (req.price || 0), 0);
+    const platformCommission = totalRequestRevenue * 0.10; // 10% commission
+
+    // Subscription Revenue (100% Admin Profit)
+    const activeSubscriptions = await Subscription.find({ status: "paid" });
+    const totalSubscriptionRevenue = activeSubscriptions.reduce((sum, s) => sum + (s.amount || 0), 0);
+
+    const totalProfit = platformCommission + totalSubscriptionRevenue;
 
     res.json({
       users: userCount,
       companies: companyCount,
       pending: pendingCount,
-      profit: platformProfit.toFixed(2),
-      revenue: totalRevenue.toFixed(2)
+      profit: totalProfit.toFixed(2),
+      revenue: (totalRequestRevenue + totalSubscriptionRevenue).toFixed(2),
+      subscriptionEarnings: totalSubscriptionRevenue.toFixed(2)
     });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch stats" });
@@ -66,6 +74,32 @@ router.get("/requests", protectAdmin, async (_, res) => {
     .populate("user", "name email")
     .populate("company", "name email");
   res.json(requests);
+});
+
+router.delete("/users/:id", protectAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: "User removed" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete user" });
+  }
+});
+
+router.delete("/companies/:id", protectAdmin, async (req, res) => {
+  try {
+    const company = await Company.findById(req.params.id);
+    if (!company) {
+      return res.status(404).json({ message: "Company not found" });
+    }
+    await Company.findByIdAndDelete(req.params.id);
+    res.json({ message: "Company removed" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete company" });
+  }
 });
 
 export default router;

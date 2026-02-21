@@ -2,8 +2,10 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "./ui/Button";
 import { motion } from "framer-motion";
-import { Sparkles, Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon } from "lucide-react";
 import { useState } from "react";
+import BeeLogo from "./ui/BeeLogo";
+import { cn } from "../lib/utils";
 
 export default function Navbar() {
     const { user, logout } = useAuth();
@@ -14,11 +16,11 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     <Link to="/" className="flex items-center gap-2 group">
-                        <div className="bg-petal-rose p-2 rounded-xl group-hover:rotate-12 transition-transform shadow-lg shadow-petal-rose/20">
-                            <Sparkles className="text-white w-5 h-5" />
+                        <div className="bg-petal-rose/10 p-2 rounded-xl group-hover:rotate-12 transition-transform">
+                            <BeeLogo className="w-6 h-6" />
                         </div>
-                        <span className="text-xl font-display font-black text-petal-leaf dark:text-white tracking-tighter">
-                            Service <span className="text-petal-rose">Bee</span>
+                        <span className="text-xl font-display font-black tracking-tighter">
+                            <span className="text-petal-moss dark:text-white">Service</span> <span className="text-petal-rose">Bee</span>
                         </span>
                     </Link>
 
@@ -32,20 +34,29 @@ export default function Navbar() {
                             <Moon className="w-5 h-5 hidden dark:block" />
                         </button>
 
-                        <Link to="/global-chat" className="text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-petal-leaf dark:hover:text-petal-rose transition-colors">
+                        <Link to="/global-chat" className="text-sm font-bold text-gray-500 dark:text-gray-300 hover:text-petal-leaf dark:hover:text-petal-rose transition-colors">
                             Global Hive
                         </Link>
                         {user ? (
                             <>
-                                <Link to="/" className="text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-petal-leaf dark:hover:text-petal-rose transition-colors">
+                                <Link to="/" className="text-sm font-bold text-gray-500 dark:text-gray-300 hover:text-petal-leaf dark:hover:text-petal-rose transition-colors">
                                     Hive Hub
                                 </Link>
                                 <div className="flex items-center gap-4 pl-4 border-l border-gray-100 dark:border-petal-leaf/20">
                                     <div className="flex flex-col items-end">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-petal-rose">{user.role === 'admin' ? 'Admin' : (user.role === 'company' ? 'Provider' : 'Member')}</span>
-                                        <span className="text-sm font-bold text-gray-800 dark:text-white">{user.name || user.email.split('@')[0]}</span>
+                                        {user.role !== 'admin' && (
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-petal-rose">
+                                                {user.role === 'company' ? 'Hive Provider' : 'Member'}
+                                            </span>
+                                        )}
+                                        <span className={cn(
+                                            "text-sm font-bold text-gray-800 dark:text-gray-100",
+                                            user.role === 'admin' && "uppercase tracking-tighter"
+                                        )}>
+                                            {user.name || user.email?.split('@')[0] || 'Hive Spirit'}
+                                        </span>
                                     </div>
-                                    <Button variant="ghost" onClick={logout} className="!px-4 !py-2 text-xs bg-gray-50 dark:bg-petal-muted/30 border-none">
+                                    <Button variant="ghost" onClick={logout} className="!px-4 !py-2 text-xs bg-gray-50 dark:bg-white/5 border-none dark:text-petal-rose font-bold">
                                         Sign Out
                                     </Button>
                                 </div>
@@ -95,8 +106,14 @@ export default function Navbar() {
                                     Hive Hub
                                 </Link>
                                 <div className="py-4 border-t border-gray-100 dark:border-petal-leaf/20 mt-4">
-                                    <p className="text-xs font-black uppercase tracking-widest text-petal-rose mb-1">{user.role === 'admin' ? 'Admin' : (user.role === 'company' ? 'Provider' : 'Member')}</p>
-                                    <p className="font-bold text-gray-800 dark:text-white mb-6">{user.name || user.email.split('@')[0]}</p>
+                                    {user.role !== 'admin' && (
+                                        <p className="text-xs font-black uppercase tracking-widest text-petal-rose mb-1">
+                                            {user.role === 'company' ? 'Provider' : 'Member'}
+                                        </p>
+                                    )}
+                                    <p className={`font-bold text-gray-800 dark:text-white mb-6 ${user.role === 'admin' ? 'uppercase tracking-tighter' : ''}`}>
+                                        {user.name || (user.email && user.email.split('@')[0]) || 'Bee'}
+                                    </p>
                                     <Button variant="outline" onClick={logout} className="w-full py-4 text-sm rounded-2xl border-petal-rose/30 text-petal-rose">
                                         Sign Out
                                     </Button>

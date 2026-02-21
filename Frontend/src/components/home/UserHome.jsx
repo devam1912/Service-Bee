@@ -85,6 +85,7 @@ export default function UserHome() {
     };
 
     const filteredCompanies = companies.filter(c => {
+        if (!c.isVerified) return false;
         const term = searchTerm.toLowerCase();
         return c.name?.toLowerCase().includes(term) || c.serviceCategory?.toLowerCase().includes(term);
     });
@@ -232,8 +233,8 @@ export default function UserHome() {
                                     <Calendar className="text-petal-rose" size={24} />
                                 </div>
                                 <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${req.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
-                                        req.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                                            'bg-blue-100 text-blue-700'
+                                    req.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                        'bg-blue-100 text-blue-700'
                                     }`}>
                                     {req.status}
                                 </span>

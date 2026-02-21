@@ -5,8 +5,18 @@
 @tailwind utilities;
 
 @layer base {
+    html {
+        @apply bg-petal-light;
+        scroll-behavior: smooth;
+    }
+
+    html.dark {
+        @apply bg-premium-dark;
+    }
+
     body {
-        @apply bg-petal-light text-petal-leaf dark:bg-petal-dark dark:text-gray-200 font-sans antialiased transition-colors duration-300;
+        @apply text-petal-leaf dark:text-gray-100 font-sans antialiased transition-colors duration-500 min-h-screen;
+        background: transparent;
     }
 
     h1,
@@ -15,7 +25,7 @@
     h4,
     h5,
     h6 {
-        @apply font-display text-petal-leaf dark:text-petal-rose tracking-tight transition-colors duration-300;
+        @apply font-display text-petal-leaf dark:text-white tracking-tight;
     }
 }
 
