@@ -5,7 +5,7 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Card from "../../components/ui/Card";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Search, Sparkles, ArrowRight, Users, MapPin, Star, MessageSquare } from "lucide-react";
+import { Calendar, Search, Sparkles, ArrowRight, Users, MapPin, Star, MessageSquare, Briefcase, Image, Upload, X } from "lucide-react";
 import AIAssistant from "../../components/AIAssistant";
 
 export default function UserHome() {
@@ -18,8 +18,10 @@ export default function UserHome() {
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [reviews, setReviews] = useState([]);
     const [bookingData, setBookingData] = useState({ serviceName: "", bookingDate: "", userNote: "" });
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState(null);
     const [bookingLoading, setBookingLoading] = useState(false);
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
 
     useEffect(() => {
         fetchData();
@@ -58,6 +60,14 @@ export default function UserHome() {
         }
     };
 
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
     const handleBook = async (e) => {
         e.preventDefault();
         if (!selectedCompany) return;
@@ -69,16 +79,108 @@ export default function UserHome() {
             formData.append("serviceName", bookingData.serviceName);
             formData.append("bookingDate", bookingData.bookingDate);
             formData.append("userNote", bookingData.userNote);
-            await axios.post("http://localhost:9876/api/requests", formData, {
-                headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
+
+            if (selectedFile) {
+                formData.append("attachments", selectedFile);
+            }
+
+            const reqRes = await axios.post("http://localhost:9876/api/requests", formData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "multipart/form-data"
+                }
             });
-            alert("Buzz sent!");
-            setActiveTab("my-requests");
-            setBookingData({ serviceName: "", bookingDate: "", userNote: "" });
-            setSelectedCompany(null);
-            fetchData();
+
+            const requestId = reqRes.data.request._id;
+
+            // Trigger Razorpay Payment
+            const payRes = await axios.post("http://localhost:9876/api/payments/create-order", { requestId }, { headers: { Authorization: `Bearer ${token}` } });
+
+            const options = {
+                key: payRes.data.keyId,
+                amount: payRes.data.amount,
+                currency: payRes.data.currency,
+                name: "Service-Bee Payment",
+                description: `Ritual Fee for ${bookingData.serviceName}`,
+                order_id: payRes.data.orderId,
+                handler: async (response) => {
+                    try {
+                        await axios.post("http://localhost:9876/api/payments/verify", {
+                            orderId: payRes.data.orderId,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature
+                        }, { headers: { Authorization: `Bearer ${token}` } });
+
+                        alert("Payment Sealed! Your buzz is now official.");
+                        setActiveTab("my-requests");
+                        setBookingData({ serviceName: "", bookingDate: "", userNote: "" });
+                        setSelectedFile(null);
+                        setPreviewUrl(null);
+                        setSelectedCompany(null);
+                        fetchData();
+                    } catch (err) {
+                        alert("Verification failed. Please contact support.");
+                    }
+                },
+                prefill: {
+                    name: user?.name,
+                    email: user?.email
+                },
+                theme: {
+                    color: "#FF8E9C"
+                }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+
         } catch (err) {
-            alert(err.response?.data?.message || "Failed.");
+            alert(err.response?.data?.message || "Failed to summon the buzz.");
+        } finally {
+            setBookingLoading(false);
+        }
+    };
+
+    const handlePayNow = async (reqId, serviceName) => {
+        setBookingLoading(true);
+        try {
+            const token = localStorage.getItem("token");
+            const payRes = await axios.post("http://localhost:9876/api/payments/create-order", { requestId: reqId }, { headers: { Authorization: `Bearer ${token}` } });
+
+            const options = {
+                key: payRes.data.keyId,
+                amount: payRes.data.amount,
+                currency: payRes.data.currency,
+                name: "Service-Bee Payment",
+                description: `Ritual Fee for ${serviceName}`,
+                order_id: payRes.data.orderId,
+                handler: async (response) => {
+                    try {
+                        await axios.post("http://localhost:9876/api/payments/verify", {
+                            orderId: payRes.data.orderId,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature
+                        }, { headers: { Authorization: `Bearer ${token}` } });
+
+                        alert("Payment Sealed! Your buzz is now official.");
+                        fetchData();
+                    } catch (err) {
+                        alert("Verification failed. Please contact support.");
+                    }
+                },
+                prefill: {
+                    name: user?.name,
+                    email: user?.email
+                },
+                theme: {
+                    color: "#FF8E9C"
+                }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+        } catch (err) {
+            alert(err.response?.data?.message || "Failed to trigger payment.");
         } finally {
             setBookingLoading(false);
         }
@@ -179,7 +281,45 @@ export default function UserHome() {
                                                 </div>
                                                 <Input label="Job Title" placeholder="What do you need?" value={bookingData.serviceName} onChange={e => setBookingData({ ...bookingData, serviceName: e.target.value })} required className="bg-white dark:bg-transparent" />
                                                 <Input label="Buzz Date" type="date" value={bookingData.bookingDate} onChange={e => setBookingData({ ...bookingData, bookingDate: e.target.value })} required min={today} className="bg-white dark:bg-transparent" />
-                                                <Button type="submit" disabled={bookingLoading} className="w-full bg-gray-800 dark:bg-petal-rose text-white h-16 rounded-[24px] font-black text-lg border-none hover:opacity-90 transition-all shadow-xl shadow-petal-rose/20">
+
+                                                <div className="space-y-2">
+                                                    <p className="text-[10px] font-black uppercase text-gray-400 ml-1">Ritual Photo (Optional)</p>
+                                                    <div className="relative group/upload">
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={handleFileChange}
+                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                        />
+                                                        <div className="border-2 border-dashed border-gray-200 dark:border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 bg-gray-50/50 dark:bg-white/5 transition-all group-hover/upload:border-petal-rose/50 group-hover/upload:bg-petal-rose/5">
+                                                            {previewUrl ? (
+                                                                <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-lg">
+                                                                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setSelectedFile(null);
+                                                                            setPreviewUrl(null);
+                                                                        }}
+                                                                        className="absolute top-2 right-2 bg-black/60 text-white p-1.5 rounded-full hover:bg-black transition-colors z-20"
+                                                                    >
+                                                                        <X size={16} />
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <div className="p-3 bg-white dark:bg-white/5 rounded-xl shadow-sm">
+                                                                        <Upload className="text-gray-400" size={24} />
+                                                                    </div>
+                                                                    <p className="text-xs font-bold text-gray-400">Tap to upload proof/reference</p>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <Button type="submit" disabled={bookingLoading} className="w-full bg-gray-800 dark:bg-petal-rose text-white h-16 rounded-[24px] font-black text-lg border-none hover:opacity-90 transition-all shadow-xl shadow-petal-rose/20 mt-4">
                                                     {bookingLoading ? 'Buzzing...' : 'Confirm Buzz'}
                                                 </Button>
                                             </form>
@@ -242,8 +382,22 @@ export default function UserHome() {
                             <h4 className="text-2xl font-black text-gray-800 dark:text-white mb-2 tracking-tight">{req.serviceName}</h4>
                             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-6">Scheduled for {new Date(req.bookingDate).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
                             <div className="pt-6 border-t border-gray-100 dark:border-petal-leaf/10 flex items-center justify-between">
-                                <span className="text-[10px] font-black uppercase text-petal-rose tracking-[0.2em]">Service Request</span>
-                                <ArrowRight size={18} className="text-gray-300" />
+                                <span className="text-[10px] font-black uppercase text-petal-rose tracking-[0.2em]">
+                                    {req.paymentStatus === 'paid' ? 'Ritual Paid' : 'Unpaid Summon'}
+                                </span>
+                                {req.paymentStatus !== 'paid' ? (
+                                    <Button
+                                        onClick={() => handlePayNow(req._id, req.serviceName)}
+                                        className="bg-petal-rose text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-none hover:opacity-90 shadow-lg shadow-petal-rose/20 transition-all active:scale-95"
+                                    >
+                                        Pay Now
+                                    </Button>
+                                ) : (
+                                    <div className="flex items-center gap-2 group-hover:translate-x-1 transition-transform">
+                                        <span className="text-[10px] font-black text-gray-300 uppercase">Details</span>
+                                        <ArrowRight size={18} className="text-gray-300" />
+                                    </div>
+                                )}
                             </div>
                         </Card>
                     )) : (

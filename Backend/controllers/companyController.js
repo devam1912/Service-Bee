@@ -166,3 +166,22 @@ export const getCompanyProfile = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch profile" });
   }
 };
+
+export const toggleActiveStatus = async (req, res) => {
+  try {
+    const company = await Company.findById(req.user._id);
+    if (!company) {
+      return res.status(404).json({ message: "Company not found" });
+    }
+
+    company.isActive = !company.isActive;
+    await company.save();
+
+    res.status(200).json({
+      message: `Operational status updated to ${company.isActive ? "Active" : "Inactive"}`,
+      isActive: company.isActive
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

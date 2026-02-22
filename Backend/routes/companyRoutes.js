@@ -1,5 +1,5 @@
 import express from "express";
-import { registerCompany, loginCompany, verifyCompanyOTP, getCompanyProfile } from "../controllers/companyController.js";
+import { registerCompany, loginCompany, verifyCompanyOTP, getCompanyProfile, toggleActiveStatus } from "../controllers/companyController.js";
 import Company from "../models/companyModel.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -8,7 +8,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const { city } = req.query;
-    const filter = { isVerified: true };
+    const filter = { isVerified: true, isActive: true };
     if (city) {
       filter.city = new RegExp(city, 'i'); // Case-insensitive city search
     }
@@ -25,5 +25,6 @@ router.post("/register", registerCompany);
 router.post("/login", loginCompany);
 router.post("/verify-otp", verifyCompanyOTP);
 router.get("/profile", protect, getCompanyProfile);
+router.patch("/toggle-active", protect, toggleActiveStatus);
 
 export default router;

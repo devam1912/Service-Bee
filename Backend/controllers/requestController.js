@@ -39,15 +39,29 @@ export const createRequest = async (req, res) => {
       return res.status(404).json({ message: "🪦 The chosen company spirit was not found" });
     }
 
+    if (!company.isActive) {
+      return res.status(400).json({ message: "🚫 This provider is currently resting and not accepting new summons." });
+    }
+
+    const requestedDateStr = bookingDate.split('T')[0]; // Ensure we only have the date part
+    const todayStr = new Date().toLocaleDateString('en-CA');
+
+    if (requestedDateStr < todayStr) {
+      return res.status(400).json({ message: "📅 Time travel is not supported. Please choose a future date (Today or later)." });
+    }
+
     if (!company.workingDays || company.workingDays.length === 0) {
       company.workingDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
       company.dailySlotCapacity = company.dailySlotCapacity || 5;
       await company.save();
     }
 
-    const day = new Date(bookingDate).toLocaleDateString("en-US", { weekday: "short" });
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const requestedDateObj = new Date(bookingDate);
+    const day = days[requestedDateObj.getDay()];
+
     if (!company.workingDays.includes(day)) {
-      return res.status(400).json({ message: `❌ This spirit does not operate on ${day}` });
+      return res.status(400).json({ message: `❌ This provider does not operate on ${day}s.` });
     }
 
     const bookedCount = await Request.countDocuments({

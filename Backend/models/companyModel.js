@@ -57,6 +57,7 @@ const companySchema = new mongoose.Schema({
   // Premium Subscription Fields
   isPremium: { type: Boolean, default: false },
   premiumExpiresAt: { type: Date, default: null },
+  isActive: { type: Boolean, default: true },
 
   otp: {
     type: String,

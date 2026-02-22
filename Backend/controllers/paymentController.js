@@ -42,7 +42,7 @@ export const createOrder = async (req, res) => {
     const order = await razorpay.orders.create({
       amount: amount * 100,
       currency: "INR",
-      receipt: `rcpt_${requestId}_${Date.now()}`,
+      receipt: `req_${String(requestId).slice(-10)}_${Date.now()}`,
     });
 
     await Payment.create({
@@ -62,6 +62,7 @@ export const createOrder = async (req, res) => {
       currency: order.currency,
     });
   } catch (err) {
+    console.error("[RAZORPAY ORDER ERROR]", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -122,6 +123,10 @@ export const createPremiumOrder = async (req, res) => {
       return res.status(403).json({ message: "Only providers can subscribe to premium" });
     }
 
+    if (!req.user.isVerified) {
+      return res.status(403).json({ message: "You must be verified by the admin to subscribe to premium" });
+    }
+
     const razorpay = getRazorpay();
     const { plan } = req.body; // monthly, semi-annual, yearly
 
@@ -144,7 +149,7 @@ export const createPremiumOrder = async (req, res) => {
     const order = await razorpay.orders.create({
       amount: amount * 100,
       currency: "INR",
-      receipt: `premium_${req.user._id}_${Date.now()}`,
+      receipt: `pre_${String(req.user._id).slice(-10)}_${Date.now()}`,
     });
 
     await Subscription.create({
@@ -164,7 +169,8 @@ export const createPremiumOrder = async (req, res) => {
       plan
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("[RAZORPAY ERROR]", err);
+    res.status(500).json({ message: `Hive payment system failure: ${err.message}` });
   }
 };
 
