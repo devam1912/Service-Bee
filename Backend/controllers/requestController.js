@@ -1,4 +1,5 @@
 import Company from "../models/companyModel.js";
+import User from "../models/userModel.js";
 import Request from "../models/requestModel.js";
 import cloudinary from "../config/cloudinary.js";
 import { SPOOKY_STATUS } from "../constants/spookyStatus.js";
@@ -19,35 +20,69 @@ const calculateTrustScore = async (companyId) => {
 export const createRequest = async (req, res) => {
   try {
     if (req.user.role !== "user") {
-      return res.status(403).json({ message: "👻 Only mortals (users) can summon service requests" });
+      return res.status(403).json({ message: "Only users can create service requests" });
     }
 
-    // ✅ TERMS ENFORCEMENT
     if (!req.user.termsAccepted) {
       return res.status(403).json({ message: "Please accept Terms & Conditions first." });
     }
 
     const body = req.body || {};
-    const { companyId, serviceName, userNote, bookingDate } = body;
+    const { companyId, serviceName, userNote, bookingDate, isCustom } = body;
 
     if (!companyId || !serviceName?.trim() || !bookingDate) {
-      return res.status(400).json({ message: "📅 Company, service and booking date are required" });
+      return res.status(400).json({ message: "Company, service and booking date are required" });
     }
 
     let company = await Company.findById(companyId);
     if (!company) {
-      return res.status(404).json({ message: "🪦 The chosen company spirit was not found" });
+      return res.status(404).json({ message: "The chosen company was not found" });
     }
 
     if (!company.isActive) {
-      return res.status(400).json({ message: "🚫 This provider is currently resting and not accepting new summons." });
+      return res.status(400).json({ message: "This provider is currently не active and not accepting new requests." });
     }
 
-    const requestedDateStr = bookingDate.split('T')[0]; // Ensure we only have the date part
-    const todayStr = new Date().toLocaleDateString('en-CA');
+    let amount = 0;
+    let negotiationStatus = "none";
+    const customRequest = isCustom === "true" || isCustom === true;
+
+    if (customRequest) {
+      amount = 0;
+      negotiationStatus = "pending";
+    } else {
+      const catalogItem = company.serviceCatalog?.find(s => s.name === serviceName);
+      amount = catalogItem ? catalogItem.price : 199;
+    }
+
+    const requestedDateObj = new Date(bookingDate);
+    const requestedDateStr = requestedDateObj.toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
 
     if (requestedDateStr < todayStr) {
-      return res.status(400).json({ message: "📅 Time travel is not supported. Please choose a future date (Today or later)." });
+      return res.status(400).json({ message: "Please choose a future date." });
+    }
+
+    let isArranged = false;
+    let isUrgent = false;
+
+    const buffer = new Date();
+    buffer.setDate(buffer.getDate() + 2);
+    const twoDaysLaterStr = buffer.toISOString().split('T')[0];
+
+    if (requestedDateStr < twoDaysLaterStr) {
+      if (!req.user.isPremium) {
+        return res.status(400).json({
+          message: "Standard bookings require at least 2 days of preparation. Upgrade to Premium for same-day or next-day services!"
+        });
+      }
+      isUrgent = true;
+    }
+
+    const isHoliday = company.unavailableDates?.includes(requestedDateStr);
+
+    if (isHoliday) {
+      return res.status(400).json({ message: "The provider is on holiday for the selected date." });
     }
 
     if (!company.workingDays || company.workingDays.length === 0) {
@@ -57,21 +92,27 @@ export const createRequest = async (req, res) => {
     }
 
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const requestedDateObj = new Date(bookingDate);
     const day = days[requestedDateObj.getDay()];
+    const isWorkingDay = company.workingDays.includes(day);
 
-    if (!company.workingDays.includes(day)) {
-      return res.status(400).json({ message: `❌ This provider does not operate on ${day}s.` });
-    }
+    const startOfDay = new Date(requestedDateStr);
+    const endOfDay = new Date(requestedDateStr);
+    endOfDay.setHours(23, 59, 59, 999);
 
     const bookedCount = await Request.countDocuments({
       company: companyId,
-      bookingDate: new Date(bookingDate),
+      bookingDate: { $gte: startOfDay, $lte: endOfDay },
       status: { $in: ["pending", "accepted"] },
     });
+    const isFull = bookedCount >= company.dailySlotCapacity;
 
-    if (bookedCount >= company.dailySlotCapacity) {
-      return res.status(400).json({ message: "🚫 All slots for this date are already haunted" });
+    if (!isWorkingDay || isFull) {
+      if (req.user.isPremium) {
+        isArranged = true;
+      } else {
+        if (!isWorkingDay) return res.status(400).json({ message: `The provider does not operate on ${day}s.` });
+        if (isFull) return res.status(400).json({ message: "All slots for this date are fully booked." });
+      }
     }
 
     const existingRequest = await Request.findOne({
@@ -79,10 +120,11 @@ export const createRequest = async (req, res) => {
       company: companyId,
       serviceName: serviceName.trim(),
       status: { $in: ["pending", "accepted"] },
+      paymentStatus: "paid"
     });
 
     if (existingRequest) {
-      return res.status(400).json({ message: "👀 A similar haunting request already exists" });
+      return res.status(400).json({ message: "A similar request already exists." });
     }
 
     let attachments = [];
@@ -96,7 +138,7 @@ export const createRequest = async (req, res) => {
       }
     }
 
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + (req.user.isPremium ? 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000));
 
     const request = await Request.create({
       user: req.user._id,
@@ -106,26 +148,30 @@ export const createRequest = async (req, res) => {
       bookingDate,
       attachments,
       expiresAt,
-
+      amount,
+      isCustom: customRequest,
+      negotiationStatus,
       paymentStatus: "pending",
       isConfirmed: false,
+      isArranged,
+      isUrgent
     });
 
     res.status(201).json({
-      message: "👻 Your haunted slot has been successfully summoned",
+      message: "Request created successfully",
       request,
       spookyStatus: SPOOKY_STATUS.pending,
     });
   } catch (error) {
     console.error("Booking Error:", error);
-    res.status(500).json({ message: error.message || "🕯️ Something dark went wrong on the server" });
+    res.status(500).json({ message: error.message || "Something went wrong on the server" });
   }
 };
 
 export const getCompanyRequests = async (req, res) => {
   try {
     if (req.user.role !== "company") {
-      return res.status(403).json({ message: "🧛 Only service providers can view these hauntings" });
+      return res.status(403).json({ message: "Only service providers can view requests" });
     }
 
     const requests = await Request.find({ company: req.user._id })
@@ -137,9 +183,9 @@ export const getCompanyRequests = async (req, res) => {
       spookyStatus: SPOOKY_STATUS[r.status],
     }));
 
-    res.status(200).json({ message: "🔮 All active hauntings have been revealed", requests: spookyRequests });
+    res.status(200).json({ message: "Requests retrieved successfully", requests: spookyRequests });
   } catch {
-    res.status(500).json({ message: "🕯️ Failed to summon company requests" });
+    res.status(500).json({ message: "Failed to retrieve company requests" });
   }
 };
 
@@ -154,36 +200,36 @@ export const getUserRequests = async (req, res) => {
       spookyStatus: SPOOKY_STATUS[r.status],
     }));
 
-    res.status(200).json({ message: "🔮 Your summoned requests have been revealed", requests: spookyRequests });
+    res.status(200).json({ message: "User requests retrieved successfully", requests: spookyRequests });
   } catch (error) {
-    res.status(500).json({ message: "🕯️ Failed to retrieve your requests" });
+    res.status(500).json({ message: "Failed to retrieve your requests" });
   }
 };
 
 export const updateRequestStatus = async (req, res) => {
   try {
     if (req.user.role !== "company") {
-      return res.status(403).json({ message: "🧛 Only companies can alter the fate of a request" });
+      return res.status(403).json({ message: "Only companies can update request status" });
     }
 
     const { requestId } = req.params;
     const { status: newStatus } = req.body;
 
     if (!["accepted", "rejected", "completed"].includes(newStatus)) {
-      return res.status(400).json({ message: "🕯️ Invalid ritual (status) attempted" });
+      return res.status(400).json({ message: "Invalid status attempted" });
     }
 
     const request = await Request.findById(requestId);
     if (!request) {
-      return res.status(404).json({ message: "🪦 This request spirit no longer exists" });
+      return res.status(404).json({ message: "Request not found" });
     }
 
     if (request.company.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "⛔ You are not bound to this request" });
+      return res.status(403).json({ message: "Not authorized to update this request" });
     }
 
     if (["completed", "rejected"].includes(request.status)) {
-      return res.status(400).json({ message: "🪦 This request has already been sealed" });
+      return res.status(400).json({ message: "This request has already been finalized" });
     }
 
     const allowedTransitions = {
@@ -192,10 +238,20 @@ export const updateRequestStatus = async (req, res) => {
     };
 
     if (!allowedTransitions[request.status]?.includes(newStatus)) {
-      return res.status(400).json({ message: "🕯️ Invalid status transition" });
+      return res.status(400).json({ message: "Invalid status transition" });
     }
 
-    // ✅ PAYMENT GATE
+    if (newStatus === "rejected") {
+      const dbUser = await User.findById(request.user);
+      if (dbUser?.isPremium) {
+        const company = await Company.findById(request.company);
+        if (company.premiumRejectionCount >= 3) {
+          return res.status(400).json({ message: "You have reached the limit for rejecting premium requests (Max 3)." });
+        }
+        await Company.findByIdAndUpdate(request.company, { $inc: { premiumRejectionCount: 1 } });
+      }
+    }
+
     if (newStatus === "accepted") {
       if (request.paymentStatus !== "paid" || request.isConfirmed !== true) {
         return res.status(400).json({
@@ -226,11 +282,47 @@ export const updateRequestStatus = async (req, res) => {
 
 
     res.status(200).json({
-      message: `🧙 Request has been ${newStatus}`,
+      message: `Request has been ${newStatus}`,
       request,
       spookyStatus: SPOOKY_STATUS[request.status],
     });
   } catch {
-    res.status(500).json({ message: "🕯️ Dark forces interrupted the ritual" });
+    res.status(500).json({ message: "Failed to update request status" });
+  }
+};
+
+export const offerPrice = async (req, res) => {
+  try {
+    if (req.user.role !== "company") {
+      return res.status(403).json({ message: "Only companies can negotiate prices" });
+    }
+
+    const { requestId } = req.params;
+    const { price } = req.body;
+
+    if (!price || isNaN(price)) {
+      return res.status(400).json({ message: "Please provide a valid fee" });
+    }
+
+    const request = await Request.findById(requestId);
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    if (request.company.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    request.amount = price;
+    request.negotiationStatus = "price_offered";
+    await request.save();
+
+    const io = getIO();
+    io.to(`request:${request._id}`).emit("request:priceOffered", { requestId, price });
+    io.to(`user:${request.user}`).emit("request:priceOffered", { requestId, price });
+
+    res.status(200).json({ message: "Price offer sent to user", request });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to send offer" });
   }
 };

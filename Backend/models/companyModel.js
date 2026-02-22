@@ -28,6 +28,11 @@ const companySchema = new mongoose.Schema({
     String,
   serviceCategory: { type: String, required: true },
   services: [String],
+  serviceCatalog: [{
+    name: { type: String, required: true },
+    price: { type: Number, required: true },
+    description: String
+  }],
   city:
     { type: String, required: true },
 
@@ -58,6 +63,8 @@ const companySchema = new mongoose.Schema({
   isPremium: { type: Boolean, default: false },
   premiumExpiresAt: { type: Date, default: null },
   isActive: { type: Boolean, default: true },
+  premiumRejectionCount: { type: Number, default: 0 },
+  unavailableDates: [{ type: String }], // Format: YYYY-MM-DD
 
   otp: {
     type: String,

@@ -13,6 +13,8 @@ const paymentSchema = new mongoose.Schema(
     signature: { type: String },
 
     amount: { type: Number, required: true },
+    totalCharged: { type: Number },
+    commissionBee: { type: Number },
     currency: { type: String, default: "INR" },
 
     status: { type: String, enum: ["created", "paid", "failed", "refunded"], default: "created", index: true },

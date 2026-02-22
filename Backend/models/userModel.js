@@ -51,7 +51,10 @@ const userSchema = new mongoose.Schema({
     isVerified: {
         type: Boolean,
         default: false
-    }
+    },
+    // Premium Fields
+    isPremium: { type: Boolean, default: false },
+    premiumExpiresAt: { type: Date, default: null }
 }, { timestamps: true });
 
 const User = mongoose.models.User || mongoose.model("User", userSchema);

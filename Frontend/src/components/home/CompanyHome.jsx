@@ -3,9 +3,10 @@ import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
-import { Clock, PlayCircle, CheckCircle, Package, User, Calendar, Users, Activity, Briefcase, Plus, Bell, ChevronRight, Star, ShieldCheck, Zap, Globe, Sparkles, X } from "lucide-react";
+import { Clock, PlayCircle, CheckCircle, Package, User, Calendar, Users, Activity, Briefcase, Plus, Bell, ChevronRight, Star, ShieldCheck, Zap, Globe, Sparkles, X, MessageCircle, Banknote, Edit3, Trash2, MapPin, ArrowRight } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import Input from "../../components/ui/Input";
 
 export default function CompanyHome() {
     const { user } = useAuth();
@@ -23,6 +24,15 @@ export default function CompanyHome() {
     });
     const [error, setError] = useState(null);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
+    const [showCatalogModal, setShowCatalogModal] = useState(false);
+    const [showChatModal, setShowChatModal] = useState(false);
+    const [activeChatRequest, setActiveChatRequest] = useState(null);
+    const [newService, setNewService] = useState({ name: "", price: "", description: "" });
+    const [offerAmount, setOfferAmount] = useState({});
+    const [chatMessages, setChatMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState("");
+    const [showHolidayModal, setShowHolidayModal] = useState(false);
+    const [holidayDate, setHolidayDate] = useState("");
 
     useEffect(() => {
         if (user) {
@@ -34,7 +44,7 @@ export default function CompanyHome() {
         try {
             setLoading(true);
             const token = localStorage.getItem("token");
-            if (!token) throw new Error("No hive access token found. Please re-login.");
+            if (!token) throw new Error("No access token found. Please re-login.");
 
             const [reqRes, profRes] = await Promise.all([
                 axios.get("http://localhost:9876/api/requests/company", { headers: { Authorization: `Bearer ${token}` } }),
@@ -76,7 +86,7 @@ export default function CompanyHome() {
             setStats(newStats);
             setError(null);
         } catch (err) {
-            setError(err.response?.data?.message || err.message || "Failed to establish connection to the hive.");
+            setError(err.response?.data?.message || err.message || "Failed to establish connection to the server.");
         } finally {
             setLoading(false);
         }
@@ -84,12 +94,12 @@ export default function CompanyHome() {
 
     const handleSubscribe = async (plan) => {
         if (!profile?.isVerified) {
-            alert("Ritual Interrupted: Your hive must be verified by the Guardian (Admin) before you can ascend to Premium status.");
+            alert("Process Interrupted: Your account must be verified by the Admin before you can upgrade to Premium status.");
             return;
         }
 
         const confirmUpgrade = window.confirm(
-            "⚠️ Refund Notice: Once the ritual is initiated and payment is processed, refunds are not possible if you decide to change or cancel the plan later. Do you wish to proceed with the ascension?"
+            "⚠️ Refund Notice: Once the process is initiated and payment is processed, refunds are not possible if you decide to change or cancel the plan later. Do you wish to proceed with the upgrade?"
         );
 
         if (!confirmUpgrade) return;
@@ -97,7 +107,7 @@ export default function CompanyHome() {
         try {
             const token = localStorage.getItem("token");
             const res = await axios.post("http://localhost:9876/api/payments/premium/create-order", { plan }, { headers: { Authorization: `Bearer ${token}` } });
-            // ... options ...
+
             const options = {
                 key: res.data.keyId,
                 amount: res.data.amount,
@@ -113,7 +123,7 @@ export default function CompanyHome() {
                             razorpay_signature: response.razorpay_signature
                         }, { headers: { Authorization: `Bearer ${token}` } });
 
-                        alert("Upgrade Ceremony Successful! You are now a Premium Bee.");
+                        alert("Upgrade Successful! You are now a Premium Bee.");
                         setShowPremiumModal(false);
                         fetchAllData();
                     } catch (err) {
@@ -125,7 +135,7 @@ export default function CompanyHome() {
                     email: profile?.email
                 },
                 theme: {
-                    color: "#FF8E9C"
+                    color: "#F59E0B"
                 }
             };
 
@@ -133,8 +143,8 @@ export default function CompanyHome() {
             rzp.open();
         } catch (err) {
             console.error("[PREMIUM ERROR]", err);
-            const msg = err.response?.data?.message || err.message || "Failed to initiate premium ritual.";
-            alert(`Ritual Interrupted: ${msg}`);
+            const msg = err.response?.data?.message || err.message || "Failed to initiate premium upgrade.";
+            alert(`Process Interrupted: ${msg}`);
         }
     };
 
@@ -155,7 +165,99 @@ export default function CompanyHome() {
             await axios.patch(`http://localhost:9876/api/requests/${requestId}/status`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } });
             fetchAllData();
         } catch (err) {
-            alert(err.response?.data?.message || "Failed to update ritual status.");
+            alert(err.response?.data?.message || "Failed to update status.");
+        }
+    };
+
+    const handleUpdateCatalog = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            await axios.put("http://localhost:9876/api/companies/catalog", { catalog: profile.serviceCatalog }, { headers: { Authorization: `Bearer ${token}` } });
+            alert("Service catalog updated successfully!");
+            setShowCatalogModal(false);
+        } catch (err) {
+            alert("Failed to update catalog.");
+        }
+    };
+
+    const handleAddService = () => {
+        if (!newService.name || !newService.price) return;
+        setProfile(prev => ({
+            ...prev,
+            serviceCatalog: [...(prev.serviceCatalog || []), { ...newService, price: Number(newService.price) }]
+        }));
+        setNewService({ name: "", price: "", description: "" });
+        setShowCatalogModal(false);
+    };
+
+    const handleRemoveService = (idx) => {
+        const updated = [...profile.serviceCatalog];
+        updated.splice(idx, 1);
+        setProfile(prev => ({ ...prev, serviceCatalog: updated }));
+    };
+
+    const handleOfferPrice = async (requestId) => {
+        const price = offerAmount[requestId];
+        if (!price) return;
+        try {
+            const token = localStorage.getItem("token");
+            await axios.post(`http://localhost:9876/api/requests/${requestId}/offer-price`, { price: Number(price) }, { headers: { Authorization: `Bearer ${token}` } });
+            alert("Price offer sent!");
+            fetchAllData();
+        } catch (err) {
+            alert("Failed to send price offer.");
+        }
+    };
+
+    const openChat = async (req) => {
+        setActiveChatRequest(req);
+        setShowChatModal(true);
+        fetchMessages(req._id);
+    };
+
+    const fetchMessages = async (requestId) => {
+        try {
+            const token = localStorage.getItem("token");
+            // Assuming we have a way to fetch request-specific messages
+        } catch (err) { }
+    };
+
+    const handleAddHoliday = async () => {
+        if (!holidayDate) return;
+        if (profile?.unavailableDates?.includes(holidayDate)) {
+            alert("This day is already marked as a holiday.");
+            return;
+        }
+        try {
+            const token = localStorage.getItem("token");
+            const newDates = [...(profile?.unavailableDates || []), holidayDate];
+            await axios.put("http://localhost:9876/api/companies/holidays", { dates: newDates }, { headers: { Authorization: `Bearer ${token}` } });
+            setHolidayDate("");
+            fetchAllData();
+        } catch (err) {
+            alert("Failed to mark holiday.");
+        }
+    };
+
+    const handleRemoveHoliday = async (dateToRemove) => {
+        try {
+            const token = localStorage.getItem("token");
+            const newDates = profile.unavailableDates.filter(d => d !== dateToRemove);
+            await axios.put("http://localhost:9876/api/companies/holidays", { dates: newDates }, { headers: { Authorization: `Bearer ${token}` } });
+            fetchAllData();
+        } catch (err) {
+            alert("Failed to restore workday.");
+        }
+    };
+
+    const sendMessage = async () => {
+        if (!newMessage.trim() || activeChatRequest?.status === 'completed') return;
+        try {
+            const token = localStorage.getItem("token");
+            await axios.post(`http://localhost:9876/api/requests/${activeChatRequest._id}/messages`, { text: newMessage }, { headers: { Authorization: `Bearer ${token}` } });
+            setNewMessage("");
+        } catch (err) {
+            alert("Failed to send message.");
         }
     };
 
@@ -173,7 +275,7 @@ export default function CompanyHome() {
                     </div>
                 </div>
                 <div className="text-center">
-                    <p className="text-gray-900 dark:text-white font-black uppercase tracking-[0.4em] text-sm mb-2">Syncing Hive</p>
+                    <p className="text-gray-900 dark:text-white font-black uppercase tracking-[0.4em] text-sm mb-2">Syncing Panel</p>
                     <p className="text-petal-rose font-bold text-xs animate-pulse italic">Connecting to provider network...</p>
                 </div>
             </div>
@@ -181,201 +283,295 @@ export default function CompanyHome() {
     );
 
     return (
-        <div className="space-y-16 animate-fade-in py-12">
-            {/* Premium Header */}
-            <header className="relative overflow-hidden bg-white/40 dark:bg-white/5 backdrop-blur-3xl p-12 rounded-[50px] border border-white/20 dark:border-white/5 shadow-2xl">
-                <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+        <div className="min-h-screen bg-gray-50/50 dark:bg-[#08090a] p-8 md:p-12 lg:p-20">
+            {profile?.isVerified === false && (
+                <div className="mb-12 p-8 bg-amber-500/10 border border-amber-500/20 rounded-[32px] flex items-center gap-6 animate-pulse">
+                    <ShieldCheck className="text-amber-500 shrink-0" size={32} />
                     <div>
-                        <motion.div
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            className="flex items-center gap-3 mb-4"
-                        >
-                            <span className={cn("px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border",
-                                profile?.isPremium ? "bg-amber-400/20 text-amber-500 border-amber-500/20" : "bg-petal-rose/20 text-petal-rose border-petal-rose/20")}>
-                                {profile?.isPremium ? "Premium Provider" : "Official Provider"}
-                            </span>
-                            <span className="text-gray-400 dark:text-gray-500 text-[10px] font-bold">•</span>
-                            <span className="text-gray-500 dark:text-gray-400 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
-                                <Activity size={12} className="text-petal-leaf" /> System Optimal
-                            </span>
-                        </motion.div>
-                        <h1 className="text-5xl md:text-7xl font-display font-black text-petal-moss dark:text-white tracking-tighter leading-tight mb-4">
-                            Greeting, <br />
-                            <span className="text-petal-rose italic">{profile?.name || user?.name || 'Provider'} Hub</span>
-                        </h1>
-                        <p className="text-gray-500 dark:text-gray-300 font-medium text-lg max-w-xl">
-                            Oversee your professional hive operations and ritual queue in real-time.
-                        </p>
+                        <p className="text-amber-600 font-black uppercase tracking-widest text-xs mb-1">Verification Required</p>
+                        <p className="text-gray-900 dark:text-gray-100 font-bold">Your profile is currently under review by our team.</p>
                     </div>
+                </div>
+            )}
 
-                    <div className="flex flex-wrap gap-4 items-center">
+            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10 mb-16 relative">
+                <div className="relative z-10">
+                    <motion.div
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        className="flex items-center gap-3 mb-6"
+                    >
+                        <div className="p-2.5 bg-petal-rose/10 rounded-2xl shadow-inner">
+                            <MapPin size={20} className="animate-bounce text-petal-rose" />
+                        </div>
+                        <span className="text-[12px] uppercase font-black tracking-[0.5em] text-gray-500 dark:text-gray-400">{user?.city || 'Local Area'} Service Network</span>
+                    </motion.div>
+                    <h2 className="text-6xl md:text-8xl font-black text-gray-900 dark:text-white tracking-tighter leading-none mb-6 italic">
+                        {profile?.name || 'Service'} <span className="text-petal-rose">Hub</span>
+                    </h2>
+                    <div className="flex flex-wrap items-center gap-4">
+                        <span className="px-6 py-2 bg-white/50 dark:bg-white/5 backdrop-blur-md rounded-full border border-white/10 text-xs font-bold text-gray-500 dark:text-gray-400">
+                            {user?.city} District
+                        </span>
+                        {profile?.isPremium && (
+                            <span className="px-6 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs font-black uppercase tracking-widest shadow-lg shadow-amber-500/20">
+                                Premium Provider
+                            </span>
+                        )}
                         <button
                             onClick={toggleActiveStatus}
-                            className={cn("px-8 py-5 rounded-[28px] shadow-2xl flex items-center gap-3 transition-all hover:scale-105",
-                                profile?.isActive
-                                    ? "bg-emerald-500 text-white shadow-emerald-500/20"
-                                    : "bg-gray-500 text-white shadow-gray-500/20 grayscale")}
+                            className={cn("px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all",
+                                profile?.isActive ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "bg-rose-500 text-white shadow-lg shadow-rose-500/20")}
                         >
-                            <div className="text-left">
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-80 leading-tight">Status</p>
-                                <p className="text-xl font-black">{profile?.isActive ? "Active" : "Inactive"}</p>
-                            </div>
+                            {profile?.isActive ? "Accepting Jobs" : "Offline"}
                         </button>
-
-                        {!profile?.isPremium && (
-                            <button
-                                onClick={() => setShowPremiumModal(true)}
-                                className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-8 py-5 rounded-[28px] shadow-2xl shadow-amber-500/20 flex items-center gap-3 transition-transform hover:scale-105"
-                            >
-                                <Zap size={20} fill="currentColor" />
-                                <div className="text-left">
-                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-80 leading-tight">Priority Mode</p>
-                                    <p className="text-xl font-black">Go Premium</p>
-                                </div>
-                            </button>
-                        )}
-
-                        <div className="relative group bg-petal-rose text-white px-8 py-5 rounded-[28px] shadow-2xl shadow-petal-rose/30 flex flex-col min-w-[180px] transition-transform hover:scale-105">
-                            <div className="absolute top-[-10px] right-[-10px] bg-white text-petal-rose w-8 h-8 rounded-full flex items-center justify-center font-black animate-bounce shadow-lg border-2 border-petal-rose">
-                                {stats.pending}
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">New Summons</span>
-                            <span className="text-2xl font-black">Requests</span>
-                        </div>
                     </div>
                 </div>
 
-                <div className="absolute top-0 right-0 w-96 h-96 bg-petal-rose/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
+                <div className="flex flex-wrap lg:flex-nowrap gap-4 relative z-10 w-full lg:w-auto">
+                    <Button onClick={() => setShowCatalogModal(true)} className="flex-1 lg:flex-none bg-white dark:bg-white/5 text-petal-moss dark:text-white border border-gray-100 dark:border-white/10 shadow-xl hover:bg-gray-50 dark:hover:bg-white/10 h-16 px-8 rounded-[24px] font-black group transition-all">
+                        <Edit3 className="group-hover:rotate-12 transition-transform text-petal-rose mr-2" size={18} /> Manage Catalog
+                    </Button>
+                    <Button onClick={() => setShowHolidayModal(true)} className="flex-1 lg:flex-none bg-white dark:bg-white/5 text-petal-moss dark:text-white border border-gray-100 dark:border-white/10 shadow-xl hover:bg-gray-50 dark:hover:bg-white/10 h-16 px-8 rounded-[24px] font-black group transition-all">
+                        <Calendar className="mr-2 text-amber-500" size={18} /> Store Holidays
+                    </Button>
+                    {!profile?.isPremium && (
+                        <Button onClick={() => setShowPremiumModal(true)} className="w-full lg:w-auto bg-amber-400 text-gray-900 border-none shadow-xl shadow-amber-500/20 h-16 px-8 rounded-[24px] font-black group overflow-hidden relative">
+                            <span className="relative z-10 flex items-center justify-center gap-2">
+                                <Zap size={18} fill="currentColor" className="animate-pulse" /> Go Premium
+                            </span>
+                        </Button>
+                    )}
+                </div>
             </header>
 
-            {/* Premium Upgrade Modal */}
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+                <StatCard icon={Users} label="Client Reach" value={stats.reach} color="petal-leaf" trend="Total Users" />
+                <StatCard icon={Activity} label="Service Success" value={`${stats.success}%`} color="petal-moss" trend="Finished Jobs" />
+                <StatCard icon={Briefcase} label="Earnings" value={`₹${stats.revenue}`} color="petal-rose" trend="Lifetime Earnings" />
+                <StatCard icon={Bell} label="Active Queue" value={requests.length} color="petal-leaf" trend="Total Requests" />
+            </div>
+
+            {/* Main Queue Section */}
+            <div className="space-y-8">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter flex items-center gap-4">
+                        <div className="bg-petal-leaf/10 p-3 rounded-2xl"><Package className="text-petal-leaf" size={24} /></div>
+                        Operational Queue
+                    </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                    <AnimatePresence mode="popLayout">
+                        {requests.length > 0 ? requests.map((req) => (
+                            <motion.div key={req._id} layout initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}>
+                                <Card className="p-8 h-full flex flex-col bg-white/60 dark:bg-white/5 hover:border-petal-rose/40 transition-all duration-500 relative group">
+                                    <div className="flex justify-between items-start mb-8">
+                                        <div className="w-12 h-12 bg-gray-50 dark:bg-white/5 rounded-xl flex items-center justify-center border border-gray-100 dark:border-white/5">
+                                            <Calendar className="text-petal-rose" size={20} />
+                                        </div>
+                                        <div className={cn("px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest",
+                                            req.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                                req.status === 'accepted' ? 'bg-blue-100 text-blue-700' :
+                                                    req.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                                                        'bg-rose-100 text-rose-700')}>
+                                            {req.status}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-grow">
+                                        <h4 className="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">{req.serviceName}</h4>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 font-bold mb-4 flex items-center gap-2">
+                                            <User className="text-petal-leaf" size={14} /> {req.user?.name}
+                                        </p>
+
+                                        {req.isCustom ? (
+                                            <div className="bg-amber-50 dark:bg-amber-500/5 p-4 rounded-2xl border border-amber-200/50 dark:border-amber-500/20 mb-4">
+                                                <p className="text-[10px] font-black text-amber-600 uppercase mb-2">Custom Price Negotiation</p>
+                                                {req.negotiationStatus === 'pending' ? (
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Amount (₹)"
+                                                            className="w-full bg-white dark:bg-black/20 rounded-xl px-3 text-sm font-bold border-none"
+                                                            value={offerAmount[req._id] || ""}
+                                                            onChange={(e) => setOfferAmount({ ...offerAmount, [req._id]: e.target.value })}
+                                                        />
+                                                        <Button onClick={() => handleOfferPrice(req._id)} className="h-10 px-4 bg-emerald-500 text-white rounded-xl text-[10px] font-black">OFFER</Button>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-emerald-500 font-bold text-sm">Offer Sent: ₹{req.amount}</p>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs font-black text-petal-rose uppercase tracking-widest bg-petal-rose/10 px-4 py-1.5 rounded-xl w-fit">Fee: ₹{req.amount || 0}</p>
+                                        )}
+
+                                        <p className="text-[11px] text-gray-400 mt-4 italic">"{req.userNote || 'No booking note...'}"</p>
+                                    </div>
+
+                                    <div className="pt-8 mt-8 border-t border-gray-100 dark:border-white/5 flex gap-3">
+                                        {req.status === 'pending' && (
+                                            <>
+                                                <Button onClick={() => updateStatus(req._id, 'accepted')} className="flex-1 bg-petal-leaf text-white h-14 rounded-2xl font-black">Accept</Button>
+                                                <Button onClick={() => updateStatus(req._id, 'rejected')} variant="ghost" className="w-14 h-14 bg-rose-50 dark:bg-rose-500/10 rounded-2xl flex items-center justify-center border-none">
+                                                    <X className="text-rose-500" size={24} />
+                                                </Button>
+                                            </>
+                                        )}
+                                        {req.status === 'accepted' && (
+                                            <Button onClick={() => updateStatus(req._id, 'completed')} className="flex-1 bg-petal-rose text-white h-14 rounded-2xl font-black">Complete</Button>
+                                        )}
+                                        <Button variant="ghost" onClick={() => openChat(req)} className="w-14 h-14 bg-gray-50 dark:bg-white/5 rounded-2xl flex items-center justify-center border-none hover:bg-petal-rose/10 transition-colors">
+                                            <MessageCircle className="text-petal-rose" size={24} />
+                                        </Button>
+                                    </div>
+                                </Card>
+                            </motion.div>
+                        )) : (
+                            <div className="col-span-full py-20 text-center opacity-50 italic">No active jobs in the queue.</div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+
+            {/* Catalog Modal */}
             <AnimatePresence>
-                {showPremiumModal && (
+                {showCatalogModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-black/80 backdrop-blur-md"
-                            onClick={() => setShowPremiumModal(false)}
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 40 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 40 }}
-                            className="w-full max-w-5xl bg-white dark:bg-[#0f1115] rounded-[48px] p-8 md:p-14 shadow-[0_0_100px_rgba(245,158,11,0.15)] border border-amber-500/20 relative overflow-hidden z-10 max-h-[95vh] overflow-y-auto custom-scrollbar"
-                        >
-                            <button
-                                onClick={() => setShowPremiumModal(false)}
-                                className="absolute top-8 right-8 text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 p-3 rounded-full transition-all z-20"
-                            >
-                                <X size={28} />
-                            </button>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowCatalogModal(false)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-2xl bg-white dark:bg-[#0f1115] rounded-[48px] p-8 md:p-12 shadow-2xl border border-white/10 relative z-10 max-h-[85vh] overflow-y-auto">
+                            <button onClick={() => setShowCatalogModal(false)} className="absolute top-8 right-8 p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"><X size={24} /></button>
+                            <h2 className="text-3xl font-black mb-8 text-gray-900 dark:text-white tracking-tight italic">Service Catalog</h2>
 
-                            <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                            <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-500/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
-
-                            <div className="text-center mb-14 relative">
-                                <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ type: "spring", damping: 15 }}
-                                    className="bg-gradient-to-br from-amber-400 to-orange-500 w-24 h-24 rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-amber-500/30"
-                                >
-                                    <Sparkles className="text-white" size={48} fill="currentColor" />
-                                </motion.div>
-                                <h2 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white tracking-tighter mb-4">
-                                    Ascend to <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 italic">Premium Bee</span>
-                                </h2>
-                                <p className="text-gray-500 dark:text-gray-400 font-medium max-w-2xl mx-auto text-lg leading-relaxed">
-                                    Summon the highest tier of priority and dominate the local hive with exclusive features and top-tier visibility.
-                                </p>
+                            <div className="space-y-6 mb-10 bg-gray-50 dark:bg-white/5 p-6 rounded-[32px]">
+                                <p className="text-[10px] font-black uppercase text-petal-rose tracking-[0.2em] mb-4">Add New Service</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input placeholder="Service Name" value={newService.name} onChange={e => setNewService({ ...newService, name: e.target.value })} />
+                                    <Input placeholder="Price (₹)" type="number" value={newService.price} onChange={e => setNewService({ ...newService, price: e.target.value })} />
+                                </div>
+                                <Input placeholder="Brief Description" value={newService.description} onChange={e => setNewService({ ...newService, description: e.target.value })} />
+                                <Button onClick={handleAddService} className="w-full bg-petal-rose text-white h-14 rounded-2xl font-black">Add to Catalog</Button>
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
-                                <PricingCard
-                                    title="Monthly Ritual"
-                                    price="₹2,000"
-                                    period="per month"
-                                    features={["Priority Search Listing", "Premium Badge", "24/7 Hive Support"]}
-                                    onClick={() => handleSubscribe('monthly')}
-                                />
-                                <PricingCard
-                                    title="Semi-Annual Ritual"
-                                    price="₹10,000"
-                                    period="per 6 months"
-                                    popular
-                                    features={["All Monthly Features", "Save ₹2,000", "Analytics Dashboard"]}
-                                    onClick={() => handleSubscribe('semi-annual')}
-                                />
-                                <PricingCard
-                                    title="Annual Ritual"
-                                    price="₹20,000"
-                                    period="per year"
-                                    features={["All Semi-Annual Features", "Save ₹4,000", "Official Partner Status"]}
-                                    onClick={() => handleSubscribe('yearly')}
-                                />
+                            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {profile?.serviceCatalog?.map((s, i) => (
+                                    <div key={i} className="flex items-center justify-between p-5 bg-white dark:bg-white/5 rounded-3xl border border-gray-100 dark:border-white/5 group">
+                                        <div>
+                                            <p className="font-black text-gray-800 dark:text-white">{s.name}</p>
+                                            <p className="text-xs font-bold text-petal-rose">₹{s.price}</p>
+                                        </div>
+                                        <button onClick={() => handleRemoveService(i)} className="p-3 text-gray-400 hover:text-red-500 transition-colors">
+                                            <Trash2 size={20} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <Button onClick={handleUpdateCatalog} className="w-full bg-emerald-500 text-white h-16 rounded-[24px] font-black text-lg mt-10 shadow-xl shadow-emerald-500/20 uppercase tracking-widest">Save Catalog</Button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Holiday Modal */}
+            <AnimatePresence>
+                {showHolidayModal && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowHolidayModal(false)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-lg bg-white dark:bg-[#0f1115] rounded-[48px] p-8 md:p-12 shadow-2xl border border-white/10 relative z-10">
+                            <h2 className="text-3xl font-black mb-8 text-gray-900 dark:text-white tracking-tight italic">Store Holidays</h2>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">Mark dates when you are unavailable</p>
+
+                            <div className="space-y-6 mb-10 bg-gray-50 dark:bg-white/5 p-6 rounded-[32px]">
+                                <Input type="date" value={holidayDate} onChange={e => setHolidayDate(e.target.value)} min={new Date().toLocaleDateString('en-CA')} />
+                                <Button onClick={handleAddHoliday} className="w-full bg-petal-leaf text-white h-14 rounded-2xl font-black italic">Mark Date</Button>
+                            </div>
+
+                            <div className="space-y-4 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                                {profile?.unavailableDates?.map((d, i) => (
+                                    <div key={i} className="flex items-center justify-between p-5 bg-white dark:bg-white/5 rounded-3xl border border-gray-100 dark:border-white/5">
+                                        <p className="font-bold text-gray-800 dark:text-gray-300">{new Date(d).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
+                                        <button onClick={() => handleRemoveHoliday(d)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <Button onClick={() => setShowHolidayModal(false)} className="w-full bg-gray-900 text-white h-16 rounded-[24px] font-black text-lg mt-10 shadow-xl uppercase tracking-widest">Close</Button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Premium Modal */}
+            <AnimatePresence>
+                {showPremiumModal && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowPremiumModal(false)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-5xl bg-white dark:bg-[#0f1115] rounded-[48px] p-8 md:p-14 shadow-2xl border border-white/10 relative z-10 max-h-[95vh] overflow-y-auto custom-scrollbar">
+                            <button onClick={() => setShowPremiumModal(false)} className="absolute top-8 right-8 p-3 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"><X size={28} /></button>
+
+                            <div className="text-center mb-16">
+                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="bg-amber-400 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-amber-400/20">
+                                    <Sparkles className="text-white" size={48} fill="currentColor" />
+                                </motion.div>
+                                <h2 className="text-5xl font-black mb-4">Go <span className="text-amber-500">Premium</span></h2>
+                                <p className="text-gray-500 max-w-2xl mx-auto text-lg leading-relaxed">Unlock advanced features and top visibility in the local network.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <PricingCard title="Monthly Plan" price="₹2,000" period="per month" features={["Priority Listing", "Premium Badge", "24/7 Support"]} onClick={() => handleSubscribe('monthly')} />
+                                <PricingCard title="6-Month Plan" price="₹10,000" period="per 6 months" popular features={["All Monthly Features", "Save ₹2,000", "Analytics"]} onClick={() => handleSubscribe('semi-annual')} />
+                                <PricingCard title="Annual Plan" price="₹20,000" period="per year" features={["All 6-Month Features", "Save ₹4,000", "Official Partner"]} onClick={() => handleSubscribe('yearly')} />
                             </div>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
 
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <StatCard icon={Users} label="Client Reach" value={stats.reach} color="petal-leaf" trend="Total Users" />
-                <StatCard icon={Activity} label="Job Success" value={`${stats.success}%`} color="petal-moss" trend="Finished Jobs" />
-                <StatCard icon={Briefcase} label="Honey Harvest" value={`₹${stats.revenue}`} color="petal-rose" trend="Lifetime Earnings" />
-                <StatCard icon={Bell} label="Active Queue" value={requests.length} color="petal-leaf" trend="Total Summons" />
-            </div>
+            {/* Chat Modal */}
+            <AnimatePresence>
+                {showChatModal && (
+                    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowChatModal(false)} />
+                        <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="w-full max-w-lg bg-white dark:bg-[#15171b] rounded-[48px] overflow-hidden shadow-2xl border border-white/5 relative z-10 flex flex-col h-[75vh]">
+                            <div className="p-8 bg-petal-rose text-white flex justify-between items-center">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-80">User Chat</p>
+                                    <h3 className="text-xl font-black text-white">{activeChatRequest?.user?.name}</h3>
+                                </div>
+                                <button onClick={() => setShowChatModal(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={24} /></button>
+                            </div>
 
-            {/* Main Queue Section */}
-            <div className="space-y-8 pt-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <h3 className="text-3xl md:text-4xl font-black text-petal-moss dark:text-white tracking-tighter flex items-center gap-4">
-                        <div className="bg-petal-leaf/10 p-4 rounded-[24px]"><Package className="text-petal-leaf" size={32} /></div>
-                        Active Operational Queue
-                    </h3>
-                </div>
+                            <div className="flex-grow p-8 overflow-y-auto custom-scrollbar space-y-4 bg-gray-50/30 dark:bg-transparent">
+                                <div className="p-4 bg-amber-50 dark:bg-amber-400/5 rounded-2xl border border-amber-200/50 dark:border-amber-400/10 text-center">
+                                    <p className="text-xs font-bold text-amber-600 uppercase mb-1 tracking-widest">Service Details</p>
+                                    <p className="text-sm font-black italic text-gray-800 dark:text-white">"{activeChatRequest?.serviceName}"</p>
+                                </div>
+                                <p className="text-center py-10 text-gray-400 text-sm italic">Chat connection active. (Socket module ready)</p>
+                            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                    <AnimatePresence mode="popLayout">
-                        {requests.length > 0 ? requests.map((req, idx) => (
-                            <motion.div key={req._id} layout initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}>
-                                <Card className="p-8 h-full flex flex-col bg-white/60 dark:bg-white/5 hover:border-petal-rose/40 transition-all duration-500">
-                                    <div className="flex justify-between items-start mb-10">
-                                        <div className="w-14 h-14 bg-gray-50 dark:bg-white/5 rounded-2xl flex items-center justify-center border border-gray-100 dark:border-white/5">
-                                            <Calendar className="text-petal-rose" size={28} />
-                                        </div>
-                                        <div className={cn("px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest",
-                                            req.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700')}>
-                                            {req.status}
-                                        </div>
-                                    </div>
-                                    <div className="flex-grow">
-                                        <h4 className="text-2xl font-black text-petal-moss dark:text-white mb-3 tracking-tight">{req.serviceName}</h4>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 font-bold mb-4 flex items-center gap-2">
-                                            <User className="text-petal-leaf" size={16} /> {req.user?.name}
-                                        </p>
-                                        <p className="text-xs font-black text-petal-rose uppercase tracking-widest bg-petal-rose/10 px-4 py-1.5 rounded-xl w-fit">Fee: ₹{req.amount || 0}</p>
-                                    </div>
-                                    <div className="pt-8 mt-8 border-t border-gray-100 dark:border-white/5">
-                                        {req.status === 'pending' && (
-                                            <Button onClick={() => updateStatus(req._id, 'accepted')} className="w-full bg-petal-leaf text-white h-14 rounded-2xl font-black">Accept Ritual</Button>
-                                        )}
-                                        {req.status === 'accepted' && (
-                                            <Button onClick={() => updateStatus(req._id, 'completed')} className="w-full bg-petal-rose text-white h-14 rounded-2xl font-black">Complete Job</Button>
-                                        )}
-                                    </div>
-                                </Card>
-                            </motion.div>
-                        )) : (
-                            <div className="col-span-full py-20 text-center opacity-50 italic">No job spirits detected in the queue.</div>
-                        )}
-                    </AnimatePresence>
-                </div>
-            </div>
+                            <div className="p-8 border-t border-gray-100 dark:border-white/5">
+                                <div className="flex gap-3">
+                                    <input
+                                        placeholder="Type a message..."
+                                        className="flex-grow bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 h-16 rounded-2xl px-6 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-petal-rose/20 transition-all dark:text-white"
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                                    />
+                                    <button onClick={sendMessage} className="w-16 h-16 bg-petal-rose text-white rounded-2xl flex items-center justify-center shadow-lg shadow-petal-rose/20 hover:scale-105 transition-all">
+                                        <ArrowRight size={24} />
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
@@ -383,16 +579,13 @@ export default function CompanyHome() {
 const PricingCard = ({ title, price, period, features, onClick, popular }) => (
     <div className={cn("p-10 rounded-[48px] border-2 transition-all duration-500 flex flex-col group relative overflow-hidden",
         popular
-            ? "bg-gradient-to-br from-amber-400 to-orange-500 text-gray-900 border-amber-300 shadow-[0_20px_50px_rgba(245,158,11,0.3)] scale-105 z-10"
+            ? "bg-gradient-to-br from-amber-400 to-orange-500 text-gray-900 border-amber-300 shadow-2xl scale-105 z-10"
             : "bg-white dark:bg-[#1a1c21] border-gray-100 dark:border-white/5 text-gray-900 dark:text-white hover:border-amber-400/50 hover:shadow-2xl hover:shadow-amber-500/10")}>
 
         {popular && (
-            <>
-                <div className="absolute top-0 right-10 -translate-y-1/2 bg-gray-900 text-white text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-[0.2em] shadow-xl">
-                    Most Summoned
-                </div>
-                <div className="absolute -right-20 -top-20 w-40 h-40 bg-white/20 rounded-full blur-3xl pointer-events-none" />
-            </>
+            <div className="absolute top-0 right-10 -translate-y-1/2 bg-gray-900 text-white text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-[0.2em] shadow-xl">
+                Best Value
+            </div>
         )}
 
         <h3 className="text-2xl font-black mb-1 uppercase tracking-tighter">{title}</h3>
@@ -400,7 +593,7 @@ const PricingCard = ({ title, price, period, features, onClick, popular }) => (
 
         <div className="flex items-baseline gap-1 mb-10">
             <span className="text-5xl font-black tracking-tighter">{price}</span>
-            <span className="text-sm font-bold opacity-60">/ ritual</span>
+            <span className="text-sm font-bold opacity-60">/ plan</span>
         </div>
 
         <div className="space-y-5 mb-12 flex-grow">
@@ -430,7 +623,7 @@ const PricingCard = ({ title, price, period, features, onClick, popular }) => (
 );
 
 const StatCard = ({ icon: Icon, label, value, color, trend }) => (
-    <Card className="p-10 flex flex-col bg-white/60 dark:bg-bee-muted/20 backdrop-blur-xl border border-white/20 dark:border-white/5 relative overflow-hidden group hover:-translate-y-2 transition-all duration-500 shadow-xl hover:shadow-2xl">
+    <Card className="p-10 flex flex-col bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/5 relative overflow-hidden group hover:-translate-y-2 transition-all duration-500 shadow-xl hover:shadow-2xl">
         <div className={cn("p-5 rounded-2xl w-fit mb-8 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3",
             color === 'petal-rose' ? 'bg-petal-rose/10 text-petal-rose' :
                 color === 'petal-moss' ? 'bg-petal-moss/10 text-petal-moss dark:text-white' :
@@ -440,7 +633,7 @@ const StatCard = ({ icon: Icon, label, value, color, trend }) => (
         </div>
         <p className="text-[10px] uppercase font-black text-gray-400 tracking-[0.4em] mb-3">{label}</p>
         <div className="flex items-baseline gap-3">
-            <p className="text-4xl font-black text-petal-moss dark:text-white leading-none tracking-tighter">{value}</p>
+            <p className="text-4xl font-black text-gray-900 dark:text-white leading-none tracking-tighter">{value}</p>
             {trend && <span className="text-[11px] font-bold text-petal-rose italic opacity-80">{trend}</span>}
         </div>
         <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-current opacity-[0.03] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />

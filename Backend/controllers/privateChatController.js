@@ -1,20 +1,66 @@
+import Message from "../models/messageModel.js";
 import PrivateMessage from "../models/privateMessageModel.js";
+import Request from "../models/requestModel.js";
+import { getIO } from "../socket/socket.js";
+
+export const sendRequestMessage = async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const { text, type, offerAmount } = req.body;
+        const senderId = req.user._id;
+        const senderType = req.user.role === "company" ? "Company" : "User";
+
+        const request = await Request.findById(requestId);
+        if (!request) return res.status(404).json({ message: "Request not found" });
+
+        // RESTRICTION: Chat only before completion
+        if (request.status === "completed") {
+            return res.status(400).json({ message: "🕯️ The ritual is complete; the spirits have departed. No further messages can be cast." });
+        }
+
+        const newMessage = await Message.create({
+            request: requestId,
+            senderId,
+            senderType,
+            text,
+            type: type || "text",
+            offerAmount
+        });
+
+        // Real-time broadcast
+        const io = getIO();
+        io.to(`request:${requestId}`).emit("new_private_message", newMessage);
+
+        res.status(201).json(newMessage);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to send message" });
+    }
+};
+
+export const getRequestMessages = async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const messages = await Message.find({ request: requestId }).sort({ createdAt: 1 });
+        res.status(200).json(messages);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch messages" });
+    }
+};
 
 export const getPrivateMessages = async (req, res) => {
     try {
         const { partnerId } = req.params;
-        const userId = req.user._id;
+        const myId = req.user._id;
 
         const messages = await PrivateMessage.find({
             $or: [
-                { senderId: userId, receiverId: partnerId },
-                { senderId: partnerId, receiverId: userId }
+                { senderId: myId, receiverId: partnerId },
+                { senderId: partnerId, receiverId: myId }
             ]
         }).sort({ createdAt: 1 });
 
-        return res.status(200).json({ success: true, messages });
+        res.status(200).json(messages);
     } catch (error) {
-        console.error("GET PRIVATE MESSAGES ERROR:", error);
-        return res.status(500).json({ message: "Failed to fetch messages" });
+        res.status(500).json({ message: "Failed to fetch private messages" });
     }
 };

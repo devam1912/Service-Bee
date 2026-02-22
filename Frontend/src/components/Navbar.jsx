@@ -2,17 +2,18 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "./ui/Button";
 import { motion } from "framer-motion";
-import { Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon, Sparkles } from "lucide-react";
 import { useState } from "react";
 import BeeLogo from "./ui/BeeLogo";
 import { cn } from "../lib/utils";
+import UserPremiumModal from "./UserPremiumModal";
 
-export default function Navbar() {
+export default function Navbar({ onOpenPremium }) {
     const { user, logout } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <nav className="bg-white/80 dark:bg-deep-moss/80 backdrop-blur-xl border-b border-gray-100 dark:border-petal-leaf/20 sticky top-0 z-50">
+        <nav className="bg-white/80 dark:bg-deep-moss/80 backdrop-blur-xl border-b border-gray-100 dark:border-petal-leaf/20 sticky top-0 z-[50]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     <Link to="/" className="flex items-center gap-2 group">
@@ -34,33 +35,42 @@ export default function Navbar() {
                             <Moon className="w-5 h-5 hidden dark:block" />
                         </button>
 
-                        <Link to="/global-chat" className="text-sm font-bold text-gray-500 dark:text-gray-300 hover:text-petal-leaf dark:hover:text-petal-rose transition-colors">
-                            Global Hive
+                        <Link to="/" className="text-sm font-bold text-gray-500 dark:text-gray-300 hover:text-petal-leaf dark:hover:text-petal-rose transition-colors">
+                            Service Hub
                         </Link>
                         {user ? (
-                            <>
-                                <Link to="/" className="text-sm font-bold text-gray-500 dark:text-gray-300 hover:text-petal-leaf dark:hover:text-petal-rose transition-colors">
-                                    Hive Hub
-                                </Link>
-                                <div className="flex items-center gap-4 pl-4 border-l border-gray-100 dark:border-petal-leaf/20">
-                                    <div className="flex flex-col items-end">
-                                        {user.role !== 'admin' && (
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-petal-rose">
-                                                {user.role === 'company' ? 'Hive Provider' : 'Member'}
+                            <div className="flex items-center gap-4 pl-4 border-l border-gray-100 dark:border-petal-leaf/20">
+                                <div className="flex flex-col items-end">
+                                    {user.role === 'user' && (
+                                        user.isPremium ? (
+                                            <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.2em] bg-gradient-to-r from-amber-400 to-orange-500 text-white px-2 py-0.5 rounded-full mb-1">
+                                                <Sparkles size={8} fill="currentColor" /> Premium
                                             </span>
-                                        )}
-                                        <span className={cn(
-                                            "text-sm font-bold text-gray-800 dark:text-gray-100",
-                                            user.role === 'admin' && "uppercase tracking-tighter"
-                                        )}>
-                                            {user.name || user.email?.split('@')[0] || 'Hive Spirit'}
+                                        ) : (
+                                            <button
+                                                onClick={onOpenPremium}
+                                                className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-500 hover:text-amber-600 transition-colors mb-1 border border-amber-500/30 px-2 py-0.5 rounded-full"
+                                            >
+                                                Go Premium
+                                            </button>
+                                        )
+                                    )}
+                                    {user.role === 'company' && (
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-petal-rose">
+                                            Service Provider
                                         </span>
-                                    </div>
-                                    <Button variant="ghost" onClick={logout} className="!px-4 !py-2 text-xs bg-gray-50 dark:bg-white/5 border-none dark:text-petal-rose font-bold">
-                                        Sign Out
-                                    </Button>
+                                    )}
+                                    <span className={cn(
+                                        "text-sm font-bold text-gray-800 dark:text-gray-100",
+                                        user.role === 'admin' && "uppercase tracking-tighter"
+                                    )}>
+                                        {user.name || user.email?.split('@')[0] || 'User'}
+                                    </span>
                                 </div>
-                            </>
+                                <Button variant="ghost" onClick={logout} className="!px-4 !py-2 text-xs bg-gray-50 dark:bg-white/5 border-none dark:text-petal-rose font-bold">
+                                    Sign Out
+                                </Button>
+                            </div>
                         ) : (
                             <div className="flex items-center gap-4 pl-4 border-l border-gray-100 dark:border-petal-leaf/20">
                                 <Link to="/login">
@@ -90,49 +100,48 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Menu */}
-            {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="md:hidden bg-white dark:bg-bee-muted border-t border-gray-100 dark:border-gray-800"
-                >
-                    <div className="px-6 pt-4 pb-8 space-y-4">
-                        <Link to="/global-chat" className="block text-lg font-bold text-petal-leaf dark:text-white py-2" onClick={() => setIsOpen(false)}>
-                            Global Hive
-                        </Link>
-                        {user ? (
-                            <>
-                                <Link to="/" className="block text-lg font-bold text-petal-leaf dark:text-white py-2" onClick={() => setIsOpen(false)}>
-                                    Hive Hub
-                                </Link>
-                                <div className="py-4 border-t border-gray-100 dark:border-petal-leaf/20 mt-4">
-                                    {user.role !== 'admin' && (
-                                        <p className="text-xs font-black uppercase tracking-widest text-petal-rose mb-1">
-                                            {user.role === 'company' ? 'Provider' : 'Member'}
+            {
+                isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="md:hidden bg-white dark:bg-bee-muted border-t border-gray-100 dark:border-gray-800"
+                    >
+                        <div className="px-6 pt-4 pb-8 space-y-4">
+                            {user ? (
+                                <>
+                                    <Link to="/" className="block text-lg font-bold text-petal-leaf dark:text-white py-2" onClick={() => setIsOpen(false)}>
+                                        Service Hub
+                                    </Link>
+                                    <div className="py-4 border-t border-gray-100 dark:border-petal-leaf/20 mt-4">
+                                        {user.role !== 'admin' && (
+                                            <p className="text-xs font-black uppercase tracking-widest text-petal-rose mb-1">
+                                                {user.role === 'company' ? 'Provider' : 'Member'}
+                                            </p>
+                                        )}
+                                        <p className={`font-bold text-gray-800 dark:text-white mb-6 ${user.role === 'admin' ? 'uppercase tracking-tighter' : ''}`}>
+                                            {user.name || (user.email && user.email.split('@')[0]) || 'Bee'}
                                         </p>
-                                    )}
-                                    <p className={`font-bold text-gray-800 dark:text-white mb-6 ${user.role === 'admin' ? 'uppercase tracking-tighter' : ''}`}>
-                                        {user.name || (user.email && user.email.split('@')[0]) || 'Bee'}
-                                    </p>
-                                    <Button variant="outline" onClick={logout} className="w-full py-4 text-sm rounded-2xl border-petal-rose/30 text-petal-rose">
-                                        Sign Out
-                                    </Button>
+                                        <Button variant="outline" onClick={logout} className="w-full py-4 text-sm rounded-2xl border-petal-rose/30 text-petal-rose">
+                                            Sign Out
+                                        </Button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex flex-col gap-4 pt-4 border-t border-gray-100 dark:border-petal-leaf/20">
+                                    <Link to="/login" className="block w-full" onClick={() => setIsOpen(false)}>
+                                        <Button variant="ghost" className="w-full py-4 rounded-2xl text-petal-leaf dark:text-white border-none">Login</Button>
+                                    </Link>
+                                    <Link to="/signup" className="block w-full" onClick={() => setIsOpen(false)}>
+                                        <Button variant="primary" className="w-full py-4 rounded-2xl bg-petal-rose text-white border-none shadow-xl shadow-petal-rose/20">Create Account</Button>
+                                    </Link>
                                 </div>
-                            </>
-                        ) : (
-                            <div className="flex flex-col gap-4 pt-4 border-t border-gray-100 dark:border-petal-leaf/20">
-                                <Link to="/login" className="block w-full" onClick={() => setIsOpen(false)}>
-                                    <Button variant="ghost" className="w-full py-4 rounded-2xl text-petal-leaf dark:text-white border-none">Login</Button>
-                                </Link>
-                                <Link to="/signup" className="block w-full" onClick={() => setIsOpen(false)}>
-                                    <Button variant="primary" className="w-full py-4 rounded-2xl bg-petal-rose text-white border-none shadow-xl shadow-petal-rose/20">Create Account</Button>
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-                </motion.div>
-            )}
-        </nav>
+                            )}
+                        </div>
+                    </motion.div>
+                )
+            }
+        </nav >
     );
 }
 

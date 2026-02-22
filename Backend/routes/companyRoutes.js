@@ -1,5 +1,5 @@
 import express from "express";
-import { registerCompany, loginCompany, verifyCompanyOTP, getCompanyProfile, toggleActiveStatus } from "../controllers/companyController.js";
+import { registerCompany, loginCompany, verifyCompanyOTP, getCompanyProfile, toggleActiveStatus, updateServiceCatalog, updateUnavailableDates } from "../controllers/companyController.js";
 import Company from "../models/companyModel.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -26,5 +26,8 @@ router.post("/login", loginCompany);
 router.post("/verify-otp", verifyCompanyOTP);
 router.get("/profile", protect, getCompanyProfile);
 router.patch("/toggle-active", protect, toggleActiveStatus);
+router.put("/catalog", protect, updateServiceCatalog);
+router.put("/holidays", protect, updateUnavailableDates);
+
 
 export default router;

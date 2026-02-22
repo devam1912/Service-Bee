@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 
 const subscriptionSchema = new mongoose.Schema(
     {
-        companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true, index: true },
+        subscriberId: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'subscriberType', index: true },
+        subscriberType: { type: String, enum: ["Company", "User"], required: true },
         orderId: { type: String, required: true, unique: true, index: true },
         paymentId: { type: String },
         signature: { type: String },

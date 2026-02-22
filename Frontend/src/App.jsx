@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
-import GlobalChat from "./pages/GlobalChat";
+
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import VerifyOTP from "./pages/auth/VerifyOTP";
@@ -20,7 +20,6 @@ export default function App() {
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoute allowedRoles={["user", "company", "admin"]} />}>
-          <Route path="/global-chat" element={<GlobalChat />} />
         </Route>
 
         {/* Dashboard Routes (Redirecting to dynamic Home Hub) */}

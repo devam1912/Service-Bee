@@ -25,6 +25,13 @@ const messageSchema = new mongoose.Schema(
       trim: true,
     },
 
+    type: {
+      type: String,
+      enum: ["text", "offer"],
+      default: "text"
+    },
+    offerAmount: Number,
+
     readBy: [
       {
         senderId: mongoose.Schema.Types.ObjectId,

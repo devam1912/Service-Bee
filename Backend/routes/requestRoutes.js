@@ -4,7 +4,9 @@ import {
   getCompanyRequests,
   getUserRequests,
   updateRequestStatus,
+  offerPrice,
 } from "../controllers/requestController.js";
+import { sendRequestMessage, getRequestMessages } from "../controllers/privateChatController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { upload } from "../middleware/uploadMiddleware.js";
 import { strictLimiter } from "../middleware/securityMiddleware.js";
@@ -36,5 +38,11 @@ router.patch(
   validate(updateRequestStatusSchema),
   updateRequestStatus
 );
+
+router.post("/:requestId/offer-price", strictLimiter, protect, offerPrice);
+
+router.get("/:requestId/messages", strictLimiter, protect, getRequestMessages);
+router.post("/:requestId/messages", strictLimiter, protect, sendRequestMessage);
+
 
 export default router;

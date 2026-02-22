@@ -167,6 +167,48 @@ export const getCompanyProfile = async (req, res) => {
   }
 };
 
+export const updateUnavailableDates = async (req, res) => {
+  try {
+    const { dates } = req.body; // Array of YYYY-MM-DD
+    if (!Array.isArray(dates)) return res.status(400).json({ message: "Dates must be an array" });
+
+    const company = await Company.findById(req.user._id);
+    if (!company) return res.status(404).json({ message: "Company not found" });
+
+    company.unavailableDates = dates;
+    await company.save();
+
+    res.json({ message: "Holiday calendar updated", unavailableDates: company.unavailableDates });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateServiceCatalog = async (req, res) => {
+  try {
+    const { catalog } = req.body; // Array of { name, price, description }
+
+    if (!Array.isArray(catalog)) {
+      return res.status(400).json({ message: "Catalog must be an array" });
+    }
+
+    const company = await Company.findById(req.user._id);
+    if (!company) {
+      return res.status(404).json({ message: "Company not found" });
+    }
+
+    company.serviceCatalog = catalog;
+    await company.save();
+
+    res.status(200).json({
+      message: "Service catalog updated",
+      catalog: company.serviceCatalog
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const toggleActiveStatus = async (req, res) => {
   try {
     const company = await Company.findById(req.user._id);

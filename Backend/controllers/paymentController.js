@@ -4,6 +4,7 @@ import Payment from "../models/paymentModel.js";
 import Request from "../models/requestModel.js";
 import Subscription from "../models/subscriptionModel.js";
 import Company from "../models/companyModel.js";
+import User from "../models/userModel.js";
 import { getIO } from "../socket/socket.js";
 
 /**
@@ -37,10 +38,12 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Already paid" });
     }
 
-    const amount = request.amount || 199;
+    const baseAmount = request.amount || 199;
+    const userFee = baseAmount * 0.05;
+    const totalCharged = baseAmount + userFee;
 
     const order = await razorpay.orders.create({
-      amount: amount * 100,
+      amount: Math.round(totalCharged * 100),
       currency: "INR",
       receipt: `req_${String(requestId).slice(-10)}_${Date.now()}`,
     });
@@ -50,7 +53,9 @@ export const createOrder = async (req, res) => {
       userId: request.user,
       companyId: request.company,
       orderId: order.id,
-      amount,
+      amount: baseAmount,
+      totalCharged: totalCharged,
+      commissionBee: baseAmount * 0.10,
       currency: "INR",
       status: "created",
     });
@@ -60,6 +65,8 @@ export const createOrder = async (req, res) => {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
+      baseAmount,
+      userFee
     });
   } catch (err) {
     console.error("[RAZORPAY ORDER ERROR]", err);
@@ -153,7 +160,8 @@ export const createPremiumOrder = async (req, res) => {
     });
 
     await Subscription.create({
-      companyId: req.user._id,
+      subscriberId: req.user._id,
+      subscriberType: "Company",
       orderId: order.id,
       amount,
       plan,
@@ -182,7 +190,7 @@ export const verifyPremiumPayment = async (req, res) => {
     const subscription = await Subscription.findOne({ orderId });
     if (!subscription) return res.status(404).json({ message: "Subscription record not found" });
 
-    if (String(subscription.companyId) !== String(req.user._id)) {
+    if (String(subscription.subscriberId) !== String(req.user._id)) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -208,7 +216,7 @@ export const verifyPremiumPayment = async (req, res) => {
     const expirationDate = new Date();
     expirationDate.setDate(expirationDate.getDate() + subscription.durationDays);
 
-    await Company.findByIdAndUpdate(subscription.companyId, {
+    await Company.findByIdAndUpdate(subscription.subscriberId, {
       isPremium: true,
       premiumExpiresAt: expirationDate
     });
@@ -218,3 +226,107 @@ export const verifyPremiumPayment = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// --- USER SUBSCRIPTIONS ---
+
+export const createUserSubscriptionOrder = async (req, res) => {
+  try {
+    console.log("[USER PREM] Initiation started for user:", req.user?._id, "Plan:", req.body?.plan);
+    const razorpay = getRazorpay();
+    const { plan } = req.body;
+    let amount = 0;
+    let durationDays = 0;
+
+    if (plan === "monthly") {
+      amount = 500;
+      durationDays = 30;
+    } else if (plan === "semi-annual") {
+      amount = 2500;
+      durationDays = 180;
+    } else if (plan === "yearly") {
+      amount = 4000;
+      durationDays = 365;
+    } else {
+      console.log("[USER PREM] Invalid plan received:", plan);
+      return res.status(400).json({ message: "Invalid subscription plan" });
+    }
+
+    console.log("[USER PREM] Creating Razorpay order...");
+    const orderData = {
+      amount: amount * 100,
+      currency: "INR",
+      receipt: `usr_pre_${String(req.user._id).slice(-10)}_${Date.now()}`,
+    };
+
+    const order = await razorpay.orders.create(orderData);
+    console.log("[USER PREM] Order created:", order.id);
+
+    console.log("[USER PREM] Creating Subscription record...");
+    await Subscription.create({
+      subscriberId: req.user._id,
+      subscriberType: "User",
+      orderId: order.id,
+      amount,
+      plan,
+      durationDays,
+      status: "created",
+    });
+
+    console.log("[USER PREM] Success response sending...");
+    res.json({
+      keyId: process.env.RAZORPAY_KEY_ID,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      plan
+    });
+  } catch (err) {
+    console.error("[USER PREM ERROR]", err);
+    res.status(500).json({ message: `Hive payment system failure: ${err.message}` });
+  }
+};
+
+export const verifyUserSubscription = async (req, res) => {
+  try {
+    const { orderId, razorpay_payment_id, razorpay_signature } = req.body;
+
+    const subscription = await Subscription.findOne({ orderId });
+    if (!subscription || subscription.subscriberType !== "User") {
+      return res.status(404).json({ message: "User subscription record not found" });
+    }
+
+    if (String(subscription.subscriberId) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const body = `${orderId}|${razorpay_payment_id}`;
+    const expected = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest("hex");
+
+    if (expected !== razorpay_signature) {
+      subscription.status = "failed";
+      await subscription.save();
+      return res.status(400).json({ message: "Signature verification failed" });
+    }
+
+    subscription.status = "paid";
+    subscription.paymentId = razorpay_payment_id;
+    subscription.signature = razorpay_signature;
+    await subscription.save();
+
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + subscription.durationDays);
+
+    await User.findByIdAndUpdate(subscription.subscriberId, {
+      isPremium: true,
+      premiumExpiresAt: expirationDate
+    });
+
+    res.json({ message: "User Emergency Access (Premium) activated successfully!", expiresAt: expirationDate });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
