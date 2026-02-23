@@ -105,7 +105,30 @@ export default function Signup() {
             <Input label="City" name="city" value={formData.city} onChange={handleChange} required className="rounded-xl border-gray-100 dark:border-petal-leaf/10" />
 
             {role === 'company' && (
-              <Input label="Service Category" name="serviceCategory" placeholder="e.g. Gardening, Floristry" value={formData.serviceCategory} onChange={handleChange} required className="rounded-xl border-gray-100 dark:border-petal-leaf/10" />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider ml-1 px-1">Service Category</label>
+                <select
+                  name="serviceCategory"
+                  value={formData.serviceCategory}
+                  onChange={handleChange}
+                  required
+                  className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-petal-muted/30 border border-gray-100 dark:border-petal-leaf/10 text-petal-leaf dark:text-white focus:outline-none focus:border-petal-rose focus:ring-1 focus:ring-petal-rose transition-all placeholder-gray-400 text-sm h-[52px]"
+                >
+                  <option value="">-- Select Category --</option>
+                  <option value="Cleaning">Cleaning</option>
+                  <option value="Plumbing">Plumbing</option>
+                  <option value="Electrical">Electrical</option>
+                  <option value="Carpentry">Carpentry</option>
+                  <option value="Painting">Painting</option>
+                  <option value="Pest Control">Pest Control</option>
+                  <option value="Appliance Repair">Appliance Repair</option>
+                  <option value="Beauty & Spa">Beauty & Spa</option>
+                  <option value="Gardening">Gardening</option>
+                  <option value="Home Security">Home Security</option>
+                  <option value="Packing & Moving">Packing & Moving</option>
+                  <option value="AC Service">AC Service</option>
+                </select>
+              </div>
             )}
           </div>
 
@@ -113,11 +136,11 @@ export default function Signup() {
 
           {role === 'company' && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider ml-1 px-1">Nature of Business</label>
+              <label className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider ml-1 px-1">Service Specialization & Field</label>
               <textarea
                 name="description"
                 className="px-4 py-3 rounded-xl bg-gray-50 dark:bg-petal-muted/30 border border-gray-100 dark:border-petal-leaf/10 text-petal-leaf dark:text-white focus:outline-none focus:border-petal-rose focus:ring-1 focus:ring-petal-rose transition-all placeholder-gray-400 text-sm min-h-[100px]"
-                placeholder="Describe your floral services..."
+                placeholder="Describe your specific field of expertise and the types of services you provide..."
                 value={formData.description}
                 onChange={handleChange}
               />
@@ -125,7 +148,7 @@ export default function Signup() {
           )}
 
           <Button type="submit" className="w-full mt-8 bg-petal-leaf dark:bg-petal-rose text-white dark:text-deep-moss py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-petal-rose/10 border-none" disabled={loading}>
-            {loading ? "Planting..." : (
+            {loading ? "Registering..." : (
               <>
                 Register Now <ArrowRight size={20} />
               </>

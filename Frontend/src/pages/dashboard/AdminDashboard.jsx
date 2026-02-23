@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
-import { Check, X, Shield, Users, Briefcase, Activity, TrendingUp, Flower2 } from "lucide-react";
+import { Check, X, Shield, Users, Briefcase, Activity, TrendingUp } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { motion } from "framer-motion";
 
@@ -75,7 +75,7 @@ export default function AdminDashboard() {
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-petal-light dark:bg-deep-moss">
             <div className="flex flex-col items-center gap-4">
-                <Flower2 className="w-12 h-12 text-petal-rose animate-spin" />
+                <Activity className="w-12 h-12 text-petal-rose animate-pulse" />
                 <p className="text-petal-leaf dark:text-petal-rose font-bold animate-pulse">Hive Control Center Loading...</p>
             </div>
         </div>
@@ -244,8 +244,8 @@ export default function AdminDashboard() {
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${req.status === 'completed' ? 'bg-emerald-100 text-emerald-600' :
-                                                req.status === 'accepted' ? 'bg-blue-100 text-blue-600' :
-                                                    'bg-orange-100 text-orange-600'
+                                            req.status === 'accepted' ? 'bg-blue-100 text-blue-600' :
+                                                'bg-orange-100 text-orange-600'
                                             }`}>
                                             {req.status}
                                         </span>

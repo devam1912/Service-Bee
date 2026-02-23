@@ -17,7 +17,6 @@ import adminRoutes from "./routes/adminRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 
 import termsRoutes from "./routes/termsRoutes.js";
-import aiRoutes from "./routes/aiRoutes.js";
 import privateChatRoutes from "./routes/privateChatRoutes.js";
 
 import initSocket from "./socket/index.js";
@@ -38,7 +37,6 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/payments", paymentRoutes);
 
 app.use("/api/terms", termsRoutes);
-app.use("/api/ai", aiRoutes);
 app.use("/api/private-chat", privateChatRoutes);
 
 // DB

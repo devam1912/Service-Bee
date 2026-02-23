@@ -60,10 +60,13 @@ export const createReview = async (req, res) => {
     const avgRating =
       reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
 
-    //find and update the company field
-    await Company.findByIdAndUpdate(request.company, {
-      rating: avgRating.toFixed(1),
-    });
+    //find and update the company field and request reviewed flag
+    await Promise.all([
+      Company.findByIdAndUpdate(request.company, {
+        rating: avgRating.toFixed(1),
+      }),
+      Request.findByIdAndUpdate(requestId, { isReviewed: true })
+    ]);
 
     res.status(201).json({
       message: "Review submitted successfully",

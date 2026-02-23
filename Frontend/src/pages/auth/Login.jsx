@@ -55,7 +55,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-petal-light dark:bg-deep-moss px-4 relative overflow-hidden">
-      {/* Decorative floral elements */}
+      {/* Decorative background elements */}
       <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-petal-rose/10 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-petal-leaf/5 rounded-full blur-[120px]" />
 
@@ -125,7 +125,7 @@ export default function Login() {
           </div>
 
           <Button type="submit" className="w-full mt-6 bg-petal-leaf dark:bg-petal-rose text-white dark:text-deep-moss py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-petal-rose/10 border-none" disabled={loading}>
-            {loading ? "Polishing..." : (
+            {loading ? "Logging in..." : (
               <>
                 Sign In <ArrowRight size={20} />
               </>

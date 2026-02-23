@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { Search, Sparkles, Send, Flower2 } from "lucide-react";
+import { Search, Sparkles, Send } from "lucide-react";
 import { motion } from "framer-motion";
 import Card from "./ui/Card";
 import Input from "./ui/Input";
@@ -76,7 +76,7 @@ const AIAssistant = () => {
                             "{result}"
                         </p>
                         <div className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-petal-rose/60 border-t border-petal-rose/10 pt-4">
-                            <Flower2 size={12} /> Curated by Hive Wisdom
+                            <Sparkles size={12} /> Curated by Hive Wisdom
                         </div>
                     </motion.div>
                 )}

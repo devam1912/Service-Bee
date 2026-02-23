@@ -1,16 +1,32 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../hooks/useSocket";
 import axios from "axios";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Card from "../../components/ui/Card";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Search, Sparkles, ArrowRight, Users, MapPin, Star, MessageSquare, Briefcase, Image, Upload, X, MessageCircle, Banknote, ChevronRight, Zap, Mic } from "lucide-react";
-import AIAssistant from "../../components/AIAssistant";
+import { Calendar, Search, Sparkles, ArrowRight, Users, MapPin, Star, MessageSquare, Briefcase, Image, Upload, X, MessageCircle, Banknote, ChevronRight, Zap, Activity, Clock } from "lucide-react";
 import { cn } from "../../lib/utils";
+
+const CATEGORIES = [
+    "Cleaning",
+    "Plumbing",
+    "Electrical",
+    "Carpentry",
+    "Painting",
+    "Pest Control",
+    "Appliance Repair",
+    "Beauty & Spa",
+    "Gardening",
+    "Home Security",
+    "Packing & Moving",
+    "AC Service"
+];
 
 export default function UserHome() {
     const { user } = useAuth();
+    const socket = useSocket();
     const [activeTab, setActiveTab] = useState("book");
     const [companies, setCompanies] = useState([]);
     const [requests, setRequests] = useState([]);
@@ -24,24 +40,19 @@ export default function UserHome() {
     const [bookingLoading, setBookingLoading] = useState(false);
     const [showChatModal, setShowChatModal] = useState(false);
     const [activeChatRequest, setActiveChatRequest] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState("All Services");
     const [newMessage, setNewMessage] = useState("");
+    const [chatMessages, setChatMessages] = useState([]);
     const [bookingError, setBookingError] = useState(null);
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [reviewingRequest, setReviewingRequest] = useState(null);
+    const [rating, setRating] = useState(5);
+    const [comment, setComment] = useState("");
+    const [reviewLoading, setReviewLoading] = useState(false);
+    const messagesEndRef = useRef(null);
     const today = new Date().toLocaleDateString('en-CA');
 
-    const handleVoiceSearch = () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert("Voice search is not supported in your browser.");
-            return;
-        }
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            setSearchTerm(transcript);
-        };
-        recognition.start();
-    };
+
 
     // Calculate minimum allowed date for standard users (today + 2 days)
     const stdMinDate = new Date();
@@ -57,6 +68,40 @@ export default function UserHome() {
             fetchReviews(selectedCompany._id);
         }
     }, [selectedCompany]);
+
+    useEffect(() => {
+        if (socket && showChatModal && activeChatRequest) {
+            socket.emit("join:request", { requestId: activeChatRequest._id });
+
+            const handleNewMessage = (msg) => {
+                if (msg.request === activeChatRequest._id) {
+                    setChatMessages(prev => [...prev, msg]);
+                    setTimeout(scrollToBottom, 100);
+                }
+            };
+
+            socket.on("new_private_message", handleNewMessage);
+
+            return () => {
+                socket.off("new_private_message", handleNewMessage);
+            };
+        }
+    }, [socket, showChatModal, activeChatRequest]);
+
+    useEffect(() => {
+        if (showChatModal) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "auto";
+        }
+        return () => {
+            document.body.style.overflow = "auto";
+        };
+    }, [showChatModal]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
     const fetchData = async () => {
         try {
@@ -82,6 +127,19 @@ export default function UserHome() {
             setReviews(res.data || []);
         } catch (err) {
             console.error("Failed to fetch reviews", err);
+        }
+    };
+
+    const fetchMessages = async (requestId) => {
+        try {
+            const token = localStorage.getItem("token");
+            const res = await axios.get(`http://localhost:9876/api/requests/${requestId}/messages`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setChatMessages(res.data || []);
+            setTimeout(scrollToBottom, 100);
+        } catch (err) {
+            console.error("Failed to fetch messages", err);
         }
     };
 
@@ -117,6 +175,14 @@ export default function UserHome() {
             });
 
             const requestId = reqRes.data.request._id;
+
+            // Immediately switch to requests tab so they see it's saved
+            setActiveTab("my-requests");
+            setBookingData({ serviceName: "", bookingDate: "", userNote: "" });
+            setSelectedFile(null);
+            setPreviewUrl(null);
+            setSelectedCompany(null);
+            fetchData();
 
             // Trigger Razorpay Payment
             const payRes = await axios.post("http://localhost:9876/api/payments/create-order", { requestId }, { headers: { Authorization: `Bearer ${token}` } });
@@ -205,10 +271,11 @@ export default function UserHome() {
     const openChat = (req) => {
         setActiveChatRequest(req);
         setShowChatModal(true);
+        fetchMessages(req._id);
     };
 
     const sendMessage = async () => {
-        if (!newMessage.trim() || activeChatRequest?.status === 'completed') return;
+        if (!newMessage.trim() || activeChatRequest?.status === 'completed' || activeChatRequest?.status === 'rejected') return;
         try {
             const token = localStorage.getItem("token");
             await axios.post(`http://localhost:9876/api/requests/${activeChatRequest._id}/messages`, { text: newMessage }, { headers: { Authorization: `Bearer ${token}` } });
@@ -219,11 +286,45 @@ export default function UserHome() {
         }
     };
 
+    const handleReviewSubmit = async (e) => {
+        e.preventDefault();
+        if (!reviewingRequest) return;
+        setReviewLoading(true);
+        try {
+            const token = localStorage.getItem("token");
+            await axios.post("http://localhost:9876/api/reviews", {
+                requestId: reviewingRequest._id,
+                rating,
+                comment
+            }, { headers: { Authorization: `Bearer ${token}` } });
+
+            alert("Thank you for your review!");
+            setReviewModalOpen(false);
+            setReviewingRequest(null);
+            setRating(5);
+            setComment("");
+            fetchData();
+        } catch (err) {
+            alert(err.response?.data?.message || "Failed to submit review.");
+        } finally {
+            setReviewLoading(false);
+        }
+    };
+
 
     const filteredCompanies = companies.filter(c => {
         if (!c.isVerified) return false;
-        const term = searchTerm.toLowerCase();
-        return c.name?.toLowerCase().includes(term) || c.serviceCategory?.toLowerCase().includes(term);
+
+        const term = searchTerm.toLowerCase().trim();
+
+        // If there's a search term, prioritize name match across all categories
+        if (term) {
+            return c.name?.toLowerCase().includes(term);
+        }
+
+        // Otherwise, filter by selected category
+        const categoryMatch = selectedCategory === "All Services" || c.serviceCategory === selectedCategory;
+        return categoryMatch;
     });
 
     return (
@@ -282,8 +383,37 @@ export default function UserHome() {
             </header>
 
             {activeTab === "book" ? (
-                <div className="space-y-12">
-                    <AIAssistant />
+                <div className="space-y-10">
+                    {/* Category Selector replaces AI */}
+                    <div className="bg-white/40 dark:bg-white/5 backdrop-blur-2xl p-8 rounded-[48px] border border-white/20 shadow-2xl overflow-hidden relative group">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-petal-rose/5 rounded-full blur-3xl -mr-32 -mt-32 transition-all group-hover:bg-petal-rose/10" />
+
+                        <div className="relative flex flex-col md:flex-row items-center justify-between gap-8">
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-petal-rose text-white rounded-3xl flex items-center justify-center shadow-2xl shadow-petal-rose/20">
+                                    <Sparkles size={32} />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-petal-rose mb-1">Service Discovery</p>
+                                    <h3 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">Find what you need.</h3>
+                                </div>
+                            </div>
+
+                            <div className="w-full md:w-72 relative group/cat">
+                                <select
+                                    className="w-full h-16 rounded-2xl bg-white dark:bg-[#1a1c21] border border-gray-100 dark:border-white/10 px-8 font-black text-xs uppercase tracking-widest text-gray-800 dark:text-white appearance-none focus:ring-4 focus:ring-petal-rose/20 transition-all cursor-pointer shadow-xl"
+                                    value={selectedCategory}
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                >
+                                    <option value="All Services">All Specialities</option>
+                                    {CATEGORIES.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                                <ChevronRight size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-petal-rose rotate-90 pointer-events-none" />
+                            </div>
+                        </div>
+                    </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                         <div className="lg:col-span-2 space-y-6">
                             <div className="relative group">
@@ -294,15 +424,9 @@ export default function UserHome() {
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
-                                <button
-                                    onClick={handleVoiceSearch}
-                                    className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-petal-rose transition-colors"
-                                    type="button"
-                                >
-                                    <Mic size={20} />
-                                </button>
+
                             </div>
-                            <p className="text-[10px] text-gray-400 mt-2 ml-4 font-bold italic">(AI will get the relatable service from your search)</p>
+                            <p className="text-[10px] text-gray-400 mt-2 ml-4 font-bold italic">(Search for specific providers or niche skills in {selectedCategory})</p>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {filteredCompanies.length > 0 ? filteredCompanies.map(company => (
@@ -345,9 +469,18 @@ export default function UserHome() {
                                         <Card className="p-8 bg-white dark:bg-petal-muted/40 border-none shadow-2xl rounded-[40px]">
                                             <h3 className="text-2xl font-black mb-8 text-gray-800 dark:text-white tracking-tight">Request Service</h3>
                                             <form onSubmit={handleBook} className="space-y-4">
-                                                <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-2xl mb-6">
-                                                    <p className="text-[10px] font-black uppercase text-gray-400 mb-1">Target Provider</p>
-                                                    <p className="font-bold text-petal-leaf dark:text-petal-rose text-lg">{selectedCompany.name}</p>
+                                                <div className="bg-gray-50 dark:bg-white/5 p-4 rounded-2xl mb-6 flex justify-between items-center">
+                                                    <div>
+                                                        <p className="text-[10px] font-black uppercase text-gray-400 mb-1">Target Provider</p>
+                                                        <p className="font-bold text-petal-leaf dark:text-petal-rose text-lg">{selectedCompany.name}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-end">
+                                                        <p className="text-[10px] font-black uppercase text-gray-400 mb-1">Rating</p>
+                                                        <div className="flex items-center gap-1.5 bg-petal-rose/10 px-3 py-1 rounded-full border border-petal-rose/20">
+                                                            <Star size={14} className="text-petal-rose fill-petal-rose" />
+                                                            <span className="text-xs font-black text-petal-rose">{selectedCompany.rating || 'New'}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div className="space-y-4">
                                                     <div className="space-y-1">
@@ -500,8 +633,29 @@ export default function UserHome() {
                                     </span>
                                 </div>
                             </div>
-                            <h4 className="text-2xl font-black text-gray-800 dark:text-white mb-2 tracking-tight">{req.serviceName}</h4>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-6">Scheduled for {new Date(req.bookingDate).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                            <div className="flex justify-between items-center mb-2">
+                                <h4 className="text-2xl font-black text-gray-800 dark:text-white tracking-tight">{req.serviceName}</h4>
+                                <div className="flex items-center gap-1 bg-petal-rose/10 px-2 py-0.5 rounded-full border border-petal-rose/20">
+                                    <Star size={10} className="text-petal-rose fill-petal-rose" />
+                                    <span className="text-[10px] font-black text-petal-rose">{req.company?.rating || 'New'}</span>
+                                </div>
+                            </div>
+                            <p className="text-[10px] font-black uppercase text-petal-rose mb-1 tracking-widest">{req.company?.name || 'Unknown Provider'}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-4">Scheduled for {new Date(req.bookingDate).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+
+                            {req.paymentStatus !== 'paid' && req.status === 'pending' && (
+                                <div className="mb-4 p-3 bg-amber-500/10 rounded-2xl border border-amber-500/20 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Activity size={14} className="text-amber-500 animate-pulse" />
+                                        <span className="text-[10px] font-black text-amber-600 uppercase">Payment Window</span>
+                                    </div>
+                                    <span className="text-[10px] font-black text-amber-600">
+                                        {(req.expiresAt && !isNaN(new Date(req.expiresAt))) ?
+                                            `${Math.max(0, Math.ceil((new Date(req.expiresAt) - new Date()) / (1000 * 60)))} mins left` :
+                                            'Expires soon'}
+                                    </span>
+                                </div>
+                            )}
                             <div className="pt-6 border-t border-gray-100 dark:border-petal-leaf/10 flex items-center justify-between">
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-black uppercase text-petal-rose tracking-[0.2em]">
@@ -515,7 +669,7 @@ export default function UserHome() {
                                 </div>
 
                                 <div className="flex gap-2">
-                                    <Button variant="ghost" onClick={() => { setActiveChatRequest(req); setShowChatModal(true); }} className="w-14 h-14 bg-gray-50 dark:bg-white/5 rounded-2xl flex items-center justify-center border-none hover:bg-petal-rose/10 transition-colors">
+                                    <Button variant="ghost" onClick={() => openChat(req)} className="w-14 h-14 bg-gray-50 dark:bg-white/5 rounded-2xl flex items-center justify-center border-none hover:bg-petal-rose/10 transition-colors">
                                         <MessageCircle className="text-petal-rose" size={24} />
                                     </Button>
                                     {req.amount > 0 && req.paymentStatus !== 'paid' && req.status !== 'rejected' && (
@@ -526,9 +680,15 @@ export default function UserHome() {
                                             <Banknote size={14} /> Pay Now
                                         </Button>
                                     )}
-                                    {req.paymentStatus === 'paid' && (
-                                        <Button onClick={() => openChat(req)} variant="ghost" className="p-3 bg-gray-50 dark:bg-white/5 rounded-xl border-none">
-                                            <MessageCircle size={18} className="text-petal-rose" />
+                                    {req.status === 'completed' && !req.isReviewed && (
+                                        <Button
+                                            onClick={() => {
+                                                setReviewingRequest(req);
+                                                setReviewModalOpen(true);
+                                            }}
+                                            className="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-none hover:opacity-90 shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center gap-2"
+                                        >
+                                            <Star size={14} /> Rate & Review
                                         </Button>
                                     )}
                                 </div>
@@ -548,7 +708,7 @@ export default function UserHome() {
                 {showChatModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowChatModal(false)} />
-                        <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="w-full max-w-lg bg-white dark:bg-[#15171b] rounded-[48px] overflow-hidden shadow-2xl border border-white/5 relative z-10 flex flex-col h-[70vh]">
+                        <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="w-full max-w-lg bg-white dark:bg-[#15171b] rounded-[48px] overflow-hidden shadow-2xl border border-white/5 relative z-10 flex flex-col h-[600px] max-h-[85vh]">
                             <div className="p-8 bg-petal-rose text-white flex justify-between items-center">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Provider Chat</p>
@@ -576,11 +736,34 @@ export default function UserHome() {
                                     </div>
                                 )}
 
-                                <p className="text-center py-10 text-gray-400 text-sm italic">Chat connection established. (System Online)</p>
+                                {activeChatRequest?.status === 'rejected' && (
+                                    <div className="p-6 bg-rose-500/10 rounded-2xl border border-rose-500/20 text-center">
+                                        <p className="text-sm font-bold text-rose-500 italic">"This request has been rejected. The conversation is now closed."</p>
+                                    </div>
+                                )}
+
+                                <div className="space-y-4">
+                                    {chatMessages.length > 0 ? chatMessages.map((msg, idx) => {
+                                        const isMe = msg.senderType === "User";
+                                        return (
+                                            <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                                <div className={`max-w-[80%] p-4 rounded-3xl shadow-sm ${isMe ? 'bg-petal-rose text-white rounded-tr-none' : 'bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-white rounded-tl-none'}`}>
+                                                    <p className="text-sm font-medium">{msg.text}</p>
+                                                    <p className={`text-[10px] mt-1 opacity-60 ${isMe ? 'text-white' : 'text-gray-500'}`}>
+                                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    }) : (
+                                        <p className="text-center py-10 text-gray-400 text-sm italic">No messages yet. Start the conversation!</p>
+                                    )}
+                                    <div ref={messagesEndRef} />
+                                </div>
                             </div>
 
                             <div className="p-8 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-transparent">
-                                {activeChatRequest?.status !== 'completed' ? (
+                                {(activeChatRequest?.status !== 'completed' && activeChatRequest?.status !== 'rejected') ? (
                                     <div className="flex gap-3">
                                         <input
                                             placeholder="Type a message..."
@@ -595,7 +778,7 @@ export default function UserHome() {
                                     </div>
                                 ) : (
                                     <div className="text-center">
-                                        <Button variant="ghost" className="text-petal-rose font-black uppercase tracking-widest text-xs" onClick={() => setShowChatModal(false)}>Close Provider Chat</Button>
+                                        <Button variant="ghost" className="text-petal-rose font-black uppercase tracking-widest text-xs" onClick={() => setShowChatModal(false)}>Close Chat</Button>
                                     </div>
                                 )}
                             </div>
@@ -619,6 +802,49 @@ export default function UserHome() {
                             <Button onClick={() => setBookingError(null)} className="w-full bg-gray-900 dark:bg-petal-rose text-white h-14 rounded-2xl font-black uppercase tracking-widest text-xs border-none shadow-xl">
                                 Try Another Date
                             </Button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+            {/* Review Modal */}
+            <AnimatePresence>
+                {reviewModalOpen && (
+                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setReviewModalOpen(false)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full max-w-md bg-white dark:bg-[#1a1c21] rounded-[48px] p-10 shadow-2xl border border-white/10 relative z-10">
+                            <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight text-center">Honey Review</h3>
+                            <p className="text-gray-500 text-center text-sm font-medium mb-8">How was your experience with <span className="text-petal-rose">{reviewingRequest?.company?.name}</span>?</p>
+
+                            <form onSubmit={handleReviewSubmit} className="space-y-6">
+                                <div className="flex justify-center gap-3">
+                                    {[1, 2, 3, 4, 5].map(num => (
+                                        <button
+                                            key={num}
+                                            type="button"
+                                            onClick={() => setRating(num)}
+                                            className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${rating >= num ? 'bg-petal-rose text-white shadow-lg shadow-petal-rose/20' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}
+                                        >
+                                            <Star size={24} fill={rating >= num ? "currentColor" : "none"} />
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Your Buzz (Comments)</label>
+                                    <textarea
+                                        className="w-full rounded-3xl bg-gray-50 dark:bg-white/5 border-none p-6 text-sm font-medium focus:ring-2 focus:ring-petal-rose min-h-[120px] resize-none"
+                                        placeholder="Tell the hive about the service..."
+                                        value={comment}
+                                        onChange={e => setComment(e.target.value)}
+                                        required
+                                    />
+                                </div>
+
+                                <Button type="submit" disabled={reviewLoading} className="w-full bg-petal-rose text-white h-16 rounded-[24px] font-black text-lg border-none hover:opacity-90 transition-all shadow-xl shadow-petal-rose/30 mt-4">
+                                    {reviewLoading ? 'Sharing...' : 'Submit Review'}
+                                </Button>
+                                <button type="button" onClick={() => setReviewModalOpen(false)} className="w-full text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2 hover:text-gray-600 transition-colors">Discard</button>
+                            </form>
                         </motion.div>
                     </div>
                 )}

@@ -13,9 +13,12 @@ export const sendRequestMessage = async (req, res) => {
         const request = await Request.findById(requestId);
         if (!request) return res.status(404).json({ message: "Request not found" });
 
-        // RESTRICTION: Chat only before completion
-        if (request.status === "completed") {
-            return res.status(400).json({ message: "🕯️ The ritual is complete; the spirits have departed. No further messages can be cast." });
+        // RESTRICTION: Chat only before completion or rejection
+        if (request.status === "completed" || request.status === "rejected") {
+            const statusMsg = request.status === "completed"
+                ? "🕯️ The ritual is complete; the spirits have departed. No further messages can be cast."
+                : "🚫 This request has been rejected. The communication line is closed.";
+            return res.status(400).json({ message: statusMsg });
         }
 
         const newMessage = await Message.create({

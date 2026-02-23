@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../hooks/useSocket";
 import axios from "axios";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
@@ -10,8 +11,10 @@ import Input from "../../components/ui/Input";
 
 export default function CompanyHome() {
     const { user } = useAuth();
+    const socket = useSocket();
     const [requests, setRequests] = useState([]);
     const [profile, setProfile] = useState(null);
+    const messagesEndRef = useRef(null);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         pending: 0,
@@ -39,6 +42,40 @@ export default function CompanyHome() {
             fetchAllData();
         }
     }, [user]);
+
+    useEffect(() => {
+        if (socket && showChatModal && activeChatRequest) {
+            socket.emit("join:request", { requestId: activeChatRequest._id });
+
+            const handleNewMessage = (msg) => {
+                if (msg.request === activeChatRequest._id) {
+                    setChatMessages(prev => [...prev, msg]);
+                    setTimeout(scrollToBottom, 100);
+                }
+            };
+
+            socket.on("new_private_message", handleNewMessage);
+
+            return () => {
+                socket.off("new_private_message", handleNewMessage);
+            };
+        }
+    }, [socket, showChatModal, activeChatRequest]);
+
+    useEffect(() => {
+        if (showChatModal) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "auto";
+        }
+        return () => {
+            document.body.style.overflow = "auto";
+        };
+    }, [showChatModal]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
     const fetchAllData = async () => {
         try {
@@ -218,8 +255,14 @@ export default function CompanyHome() {
     const fetchMessages = async (requestId) => {
         try {
             const token = localStorage.getItem("token");
-            // Assuming we have a way to fetch request-specific messages
-        } catch (err) { }
+            const res = await axios.get(`http://localhost:9876/api/requests/${requestId}/messages`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setChatMessages(res.data || []);
+            setTimeout(scrollToBottom, 100);
+        } catch (err) {
+            console.error("Failed to fetch messages", err);
+        }
     };
 
     const handleAddHoliday = async () => {
@@ -251,7 +294,7 @@ export default function CompanyHome() {
     };
 
     const sendMessage = async () => {
-        if (!newMessage.trim() || activeChatRequest?.status === 'completed') return;
+        if (!newMessage.trim() || activeChatRequest?.status === 'completed' || activeChatRequest?.status === 'rejected') return;
         try {
             const token = localStorage.getItem("token");
             await axios.post(`http://localhost:9876/api/requests/${activeChatRequest._id}/messages`, { text: newMessage }, { headers: { Authorization: `Bearer ${token}` } });
@@ -537,7 +580,7 @@ export default function CompanyHome() {
                 {showChatModal && (
                     <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowChatModal(false)} />
-                        <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="w-full max-w-lg bg-white dark:bg-[#15171b] rounded-[48px] overflow-hidden shadow-2xl border border-white/5 relative z-10 flex flex-col h-[75vh]">
+                        <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="w-full max-w-lg bg-white dark:bg-[#15171b] rounded-[48px] overflow-hidden shadow-2xl border border-white/5 relative z-10 flex flex-col h-[600px] max-h-[85vh]">
                             <div className="p-8 bg-petal-rose text-white flex justify-between items-center">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest opacity-80">User Chat</p>
@@ -547,26 +590,57 @@ export default function CompanyHome() {
                             </div>
 
                             <div className="flex-grow p-8 overflow-y-auto custom-scrollbar space-y-4 bg-gray-50/30 dark:bg-transparent">
-                                <div className="p-4 bg-amber-50 dark:bg-amber-400/5 rounded-2xl border border-amber-200/50 dark:border-amber-400/10 text-center">
-                                    <p className="text-xs font-bold text-amber-600 uppercase mb-1 tracking-widest">Service Details</p>
-                                    <p className="text-sm font-black italic text-gray-800 dark:text-white">"{activeChatRequest?.serviceName}"</p>
+                                {activeChatRequest?.status === 'completed' && (
+                                    <div className="p-6 bg-petal-rose/10 rounded-2xl border border-petal-rose/20 text-center">
+                                        <p className="text-sm font-bold text-petal-rose italic">"The service has concluded. The channel is now read-only."</p>
+                                    </div>
+                                )}
+
+                                {activeChatRequest?.status === 'rejected' && (
+                                    <div className="p-6 bg-rose-500/10 rounded-2xl border border-rose-500/20 text-center">
+                                        <p className="text-sm font-bold text-rose-500 italic">"This request was rejected. The conversation is closed."</p>
+                                    </div>
+                                )}
+
+                                <div className="space-y-4">
+                                    {chatMessages.length > 0 ? chatMessages.map((msg, idx) => {
+                                        const isMe = msg.senderType === "Company";
+                                        return (
+                                            <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                                <div className={`max-w-[80%] p-4 rounded-3xl shadow-sm ${isMe ? 'bg-petal-rose text-white rounded-tr-none' : 'bg-white dark:bg-white/5 text-gray-800 dark:text-white rounded-tl-none border border-gray-100 dark:border-white/5'}`}>
+                                                    <p className="text-sm font-medium">{msg.text}</p>
+                                                    <p className={`text-[10px] mt-1 opacity-60 ${isMe ? 'text-white' : 'text-gray-500'}`}>
+                                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    }) : (
+                                        <p className="text-center py-10 text-gray-400 text-sm italic">No messages yet. Start the conversation!</p>
+                                    )}
+                                    <div ref={messagesEndRef} />
                                 </div>
-                                <p className="text-center py-10 text-gray-400 text-sm italic">Chat connection active. (Socket module ready)</p>
                             </div>
 
                             <div className="p-8 border-t border-gray-100 dark:border-white/5">
-                                <div className="flex gap-3">
-                                    <input
-                                        placeholder="Type a message..."
-                                        className="flex-grow bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 h-16 rounded-2xl px-6 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-petal-rose/20 transition-all dark:text-white"
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                                    />
-                                    <button onClick={sendMessage} className="w-16 h-16 bg-petal-rose text-white rounded-2xl flex items-center justify-center shadow-lg shadow-petal-rose/20 hover:scale-105 transition-all">
-                                        <ArrowRight size={24} />
-                                    </button>
-                                </div>
+                                {(activeChatRequest?.status !== 'completed' && activeChatRequest?.status !== 'rejected') ? (
+                                    <div className="flex gap-3">
+                                        <input
+                                            placeholder="Type a message..."
+                                            className="flex-grow bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 h-16 rounded-2xl px-6 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-petal-rose/20 transition-all dark:text-white"
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                                        />
+                                        <button onClick={sendMessage} className="w-16 h-16 bg-petal-rose text-white rounded-2xl flex items-center justify-center shadow-lg shadow-petal-rose/20 hover:scale-105 transition-all">
+                                            <ArrowRight size={24} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-center">
+                                        <Button variant="ghost" className="text-petal-rose font-black uppercase tracking-widest text-xs" onClick={() => setShowChatModal(false)}>Close Chat</Button>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </div>

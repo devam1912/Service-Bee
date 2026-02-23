@@ -113,7 +113,7 @@ export default function UserDashboard() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-100 dark:border-petal-leaf/10 pb-6 gap-4">
                 <div>
                     <h2 className="text-3xl font-display font-black text-petal-leaf dark:text-white tracking-tight">Service Bee Hive</h2>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 font-medium">Manage your buzz and track your hive</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 font-medium">Manage your services and track your network</p>
                 </div>
                 <div className="flex bg-gray-100 dark:bg-petal-muted/30 p-1.5 rounded-2xl">
                     <button
@@ -150,7 +150,7 @@ export default function UserDashboard() {
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-petal-rose transition-colors" size={18} />
                                 <input
                                     type="text"
-                                    placeholder="Search for florists, gardeners, or categories..."
+                                    placeholder="Search for providers, experts, or categories..."
                                     className="w-full bg-white dark:bg-petal-muted/20 border border-gray-100 dark:border-petal-leaf/10 rounded-2xl py-4 pl-12 pr-4 text-petal-leaf dark:text-white focus:border-petal-rose focus:ring-1 focus:ring-petal-rose focus:outline-none transition-all shadow-sm font-medium"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -184,7 +184,7 @@ export default function UserDashboard() {
                             </div>
                         </div>
 
-                        {/* Planting Form */}
+                        {/* Booking Form */}
                         <div className="relative">
                             <Card className="sticky top-24 border-none shadow-2xl bg-white dark:bg-petal-muted/40 p-8 rounded-[40px] backdrop-blur-md">
                                 <h3 className="text-2xl font-display font-black mb-8 text-petal-leaf dark:text-white tracking-tight">Send a Buzz</h3>
@@ -205,9 +205,9 @@ export default function UserDashboard() {
 
                                         <div className="space-y-5">
                                             <Input
-                                                label="Service Essence"
+                                                label="Service Requested"
                                                 name="serviceName"
-                                                placeholder="e.g., Seasonal Pruning"
+                                                placeholder="e.g., Deep Cleaning, AC Repair"
                                                 value={bookingData.serviceName}
                                                 onChange={(e) => setBookingData({ ...bookingData, serviceName: e.target.value })}
                                                 required
@@ -294,7 +294,7 @@ export default function UserDashboard() {
                                             <Calendar size={16} className="text-petal-rose" />
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Growth Date</p>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Scheduled Date</p>
                                             <p className="text-sm font-bold text-petal-leaf dark:text-white">{new Date(req.bookingDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}</p>
                                         </div>
                                     </div>

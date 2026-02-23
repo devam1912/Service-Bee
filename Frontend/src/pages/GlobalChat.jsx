@@ -84,7 +84,7 @@ export default function GlobalChat() {
       </div>
 
       <Card className="flex-grow flex flex-col p-0 overflow-hidden relative min-h-0 bg-white dark:bg-petal-muted/20 border-none shadow-2xl rounded-[40px]">
-        {/* Subtle floral pattern background */}
+        {/* Subtle honeycomb pattern background */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
           style={{ backgroundImage: "radial-gradient(#FF8E9C 1px, transparent 1px)", backgroundSize: "32px 32px" }}>
         </div>

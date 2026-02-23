@@ -61,7 +61,8 @@ const requestSchema = new mongoose.Schema({
     _id: false
   }],
   isArranged: { type: Boolean, default: false },
-  isUrgent: { type: Boolean, default: false }
+  isUrgent: { type: Boolean, default: false },
+  isReviewed: { type: Boolean, default: false }
 }, { timestamps: true });
 
 requestSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // auto delete

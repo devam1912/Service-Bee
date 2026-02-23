@@ -47,6 +47,11 @@ export default function initSocket(io) {
       io.to(roomId).emit("private:newMessage", msg);
     });
 
+    socket.on("join:request", ({ requestId }) => {
+      socket.join(`request:${requestId}`);
+      console.log(`📡 actor ${socket.actor.id} joined request room: request:${requestId}`);
+    });
+
     socket.on("disconnect", () => {
       console.log("🔴 socket disconnected:", socket.id);
     });

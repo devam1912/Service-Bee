@@ -192,7 +192,7 @@ export const getCompanyRequests = async (req, res) => {
 export const getUserRequests = async (req, res) => {
   try {
     const requests = await Request.find({ user: req.user._id })
-      .populate("company", "name email mobile city serviceCategory")
+      .populate("company", "name email mobile city serviceCategory rating")
       .sort({ createdAt: -1 });
 
     const spookyRequests = requests.map((r) => ({
