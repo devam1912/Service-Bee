@@ -1,279 +1,131 @@
-# 🐝 Service Bee – Backend
+# 🐝 Service-Bee: The Premier Service Management Ecosystem
 
-Service Bee Backend is a production-ready Node.js + Express + MongoDB API that powers the Service Bee platform. It handles authentication, service requests, companies, reviews, payments, and real-time global chat using Socket.IO.
+[![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-v18+-339933.svg)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-v18-61DAFB.svg)](https://reactjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC.svg)](https://tailwindcss.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248.svg)](https://www.mongodb.com/)
+[![Socket.io](https://img.shields.io/badge/Socket.io-v4-010101.svg)](https://socket.io/)
 
-## 🚀 Tech Stack
+**Service-Bee** is a sophisticated, high-performance service marketplace and management platform. Designed for maximum efficiency, it bridges the gap between consumers and professional service providers with a precision-engineered interface. From real-time community engagement to automated booking lifecycles and secure financial transactions, Service-Bee is the "Golden Standard" of modern service ecosystems.
 
-* Node.js
-* Express.js
-* MongoDB + Mongoose
-* JWT Authentication
-* Socket.IO (Real-time chat & updates)
-* Cloudinary (file uploads)
-* Razorpay (payments)
-* Security Middlewares
-   * Helmet
-   * CORS
-   * Rate Limiting
-   * XSS Protection
+---
 
-## 📂 Folder Structure
+## ✨ The Vision: Elegance Meets Efficiency
+Service-Bee replaces complexity with a streamlined, vibrant experience. Built with a signature **Amber & Charcoal** aesthetic, the platform prioritizes:
+- **Diamond-Grade UI**: A crisp, premium interface with high-contrast elements and ergonomic layouts.
+- **Fluid Motion**: State-of-the-art transitions powered by **Framer Motion** for a responsive, "living" application feel.
+- **Instant Connectivity**: Real-time synchronization across all roles via WebSocket technology.
 
+---
+
+## 🚀 Elevated Features
+
+### 👤 The User Experience (Seekers)
+*   **Search Intelligence**: Multi-city, category-aware search engine to find the perfect service provider instantly.
+*   **AI-Bot Integration**: An intelligent assistant capable of providing 24/7 support and service recommendations.
+*   **Priority Access (Premium)**:
+    *   **Same-Day Booking**: Skip the wait with priority scheduling.
+    *   **Elite Status**: Exclusive badges and enhanced support visibility.
+    *   **Flexible Windows**: Extended payment and modification windows for premium subscribers.
+*   **Live Marketplace Chat**: Engage with the community in real-time to discuss services, reviews, and insights.
+*   **Digital Wallet Integration**: Secure payment verification for every booking.
+
+### 🏢 The Company Workspace (Providers)
+*   **Precision Dashboard**: High-level overview of daily operations, pending tasks, and revenue streams.
+*   **Automated Scheduling**: Define daily slot capacity and management rules.
+*   **Holiday Intelligence**: Integrated calendar to mark holidays, automatically preventing booking conflicts and managing client expectations.
+*   **Trust Score Algorithm**: Dynamic ranking based on verified reviews and successful fulfillment rates.
+*   **Direct Client Communication**: Secure, real-time private channels with every customer.
+
+### 👮 The Command Center (Administrators)
+*   **Platform Analytics**: Real-time monitoring of User growth, Company verifications, and Financial health.
+*   **Governance Tools**: Manual verification workflow for new service providers.
+*   **Financial Oversight**: Automated tracking of platform fees, revenue, and profit margins.
+*   **Moderation Engine**: Advanced tools to manage global chat community standards, including real-time word filtering and actor management (mute/ban).
+
+---
+
+## 🛠️ Technical Infrastructure
+
+### Core Stack
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 18, Vite, Tailwind CSS, Framer Motion, Lucide Icons |
+| **Backend** | Node.js, Express.js |
+| **Database** | MongoDB with Mongoose (ODM) |
+| **Real-time** | Socket.IO for bidirectional communication |
+| **Payments** | Razorpay (Order Creation & Signature Verification) |
+| **Storage** | Cloudinary (High-speed Asset Management) |
+
+### Enterprise-Grade Security
+*   **Stateless Auth**: Robust JWT implementation for secure, scalable session management.
+*   **Identity Verification**: Integrated OTP (One-Time Password) systems for secure onboarding.
+*   **Defense in Depth**:
+    *   **Helmet.js**: Secure HTTP header configuration.
+    *   **Rate Limiting**: Protection against automated attacks and exploitation.
+    *   **Data Sanitization**: Cross-Site Scripting (XSS) and NoSQL Injection prevention.
+
+---
+
+## 📂 Architecture & Data Models
+
+### System Directory
+```text
+Service-Bee/
+├── Backend/                 # The Logic Engine
+│   ├── controllers/         # Specialized logic units (Admin, Company, Payment, AI)
+│   ├── middleware/          # Security, Auth, and Request Validation
+│   ├── models/              # Schema Definitions (Users, Requests, TrustScores)
+│   ├── socket/              # WebSocket event orchestration
+│   └── seedAdmin.js         # Infrastructure initialization script
+└── Frontend/                # The Visual Interface
+    ├── src/
+    │   ├── components/      # Reusable UI Architecture
+    │   ├── context/         # Global State & Auth Providers
+    │   ├── pages/           # Strategic Application Views
+    │   └── lib/             # Shared Utilities and API configurations
 ```
-Backend/
-├── config/
-│   ├── connectDB.js
-│   └── cloudinary.js
-├── controllers/
-│   ├── userController.js
-│   ├── requestController.js
-│   ├── paymentController.js
-│   └── ...
-├── middleware/
-│   ├── authMiddleware.js
-│   ├── securityMiddleware.js
-│   └── socketAuth.js
-├── models/
-│   ├── UserModel.js
-│   ├── CompanyModel.js
-│   ├── RequestModel.js
-│   └── GlobalMessageModel.js
-├── routes/
-│   ├── userRoutes.js
-│   ├── requestRoutes.js
-│   ├── globalChatRoutes.js
-│   └── ...
-├── socket/
-│   └── index.js
-├── index.js
-├── .env
-├── package.json
-└── README.md
-```
 
-## 🔐 Environment Variables
+---
 
-Create a `.env` file inside `Backend/`:
+## 🏁 Getting Started
 
-```env
-PORT=9876
-MONGODB_URL=your_mongodb_connection_string
-
-JWT_SECRET=servicebee_secret_key
-JWT_EXPIRES=7d
-
-CLOUD_NAME=your_cloudinary_name
-API_KEY=your_cloudinary_key
-API_SECRET=your_cloudinary_secret
-
-RAZORPAY_KEY_ID=your_key
-RAZORPAY_KEY_SECRET=your_secret
-```
-
-## 🛠️ Installation & Setup
-
+### 1. Repository Setup
 ```bash
-# Go to backend folder
+git clone https://github.com/your-username/service-bee.git
+cd service-bee
+```
+
+### 2. Backend Initialization
+```bash
 cd Backend
-
-# Install dependencies
 npm install
-
-# Start development server
+# Configure your .env (PORT, MONGODB_URL, JWT_SECRET, CLOUD_NAME, RAZORPAY_...)
 npm run dev
 ```
 
-Server will run on:
-
-```
-http://localhost:9876
-```
-
-## Base URL (dev):
-
-```
-http://localhost:9876
+### 3. Frontend Initialization
+```bash
+cd ../Frontend
+npm install
+npm run dev
 ```
 
-## 🔐 Authentication
+---
 
-### 👤 User Auth
+## 🔮 Future Horizons
+- [ ] **Mobile Ecosystem**: Native iOS and Android applications.
+- [ ] **Predictive AI**: Advanced machine learning for service demand forecasting.
+- [ ] **Global Scaling**: Multi-currency and localized language support.
 
-Base: `/api/users`
+---
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/register` | Register a user |
-| POST | `/login` | Login user |
-| GET | `/profile` | Get logged-in user profile (JWT required) |
+## 👨‍💻 Developed By
+**Devam**
+*Forging high-performance digital ecosystems.*
 
-Auth required: `Bearer <token>`
+---
 
-### 🏢 Company Auth
-
-Base: `/api/companies`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Get verified companies (ranked by trustScore) |
-| POST | `/register` | Register company |
-| POST | `/login` | Login company |
-
-### 👮 Admin Auth
-
-Base: `/api/admin`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/login` | Admin login |
-
-## 📝 Service Requests
-
-Base: `/api/requests` (Auth required – User or Company)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/` | Create service request (user only) |
-| GET | `/company` | Get requests for company |
-| PATCH | `/:requestId/status` | Update request status |
-
-**Status flow:**
-
-```
-pending → accepted → completed
-pending → rejected
-```
-
-## ⭐ Reviews
-
-Base: `/api/reviews`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/` | Create review (user only) |
-
-## 📜 Terms & Conditions
-
-Base: `/api/terms`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/status` | Check terms acceptance |
-| POST | `/accept` | Accept terms |
-
-## 💳 Payments (Razorpay)
-
-Base: `/api/payments`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/create-order` | Create Razorpay order |
-| POST | `/verify` | Verify payment |
-
-## 🌍 Global Chat (User Side)
-
-Base: `/api/global-chat`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/messages` | Get global messages |
-| POST | `/report` | Report a message |
-
-Protected + rate limited
-
-## 🛡️ Global Chat (Admin Moderation)
-
-Base: `/api/admin/global-chat`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/reports` | Get reported messages |
-| PATCH | `/hide` | Hide a message |
-| PATCH | `/mute` | Mute user/company |
-| PATCH | `/ban` | Ban actor |
-| PATCH | `/banned-words` | Update banned words list |
-
-## 👮 Admin Dashboard APIs
-
-Base: `/api/admin`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/users` | Get all users |
-| GET | `/companies` | Get all companies |
-| PATCH | `/companies/:id/verify` | Verify company |
-| GET | `/requests` | Get all requests |
-
-## 🧪 Test Route
-
-Base: `/api`
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/test` | Health check |
-
-**Response:**
-
-```json
-{ "message": "Servie Bee" }
-```
-
-## 📦 Core Features
-
-### 👤 Users
-* Register & Login (JWT)
-* Terms acceptance enforcement
-
-### 🏢 Companies
-* Company profiles
-* Trust score calculation
-
-### 📝 Service Requests
-* Booking with slot capacity
-* Status lifecycle:
-   * pending → accepted → completed
-   * rejected
-
-### ⭐ Reviews
-* User reviews & ratings
-
-### 💳 Payments
-* Razorpay integration
-* Booking confirmation checks
-
-### 🌍 Global Chat
-* Real-time messaging with Socket.IO
-* Messages stored in MongoDB
-* Broadcast to all connected users
-
-## 🔌 Socket.IO (Realtime)
-
-Socket server runs on same port as backend.
-
-**Events (client → server):**
-* `join:global`
-* `sendGlobalMessage`
-
-**Events (server → client):**
-* `global:newMessage`
-* `request:statusUpdated`
-
-## 🔒 Security
-
-Enabled via `applySecurity()`:
-* Helmet headers
-* CORS
-* Rate limiting
-* XSS protection
-* JWT-based auth
-
-## 📌 Notes
-
-* Backend is fully independent of frontend
-* Frontend can be rebuilt or replaced without affecting backend
-* Designed for production-grade scaling
-
-## 👨‍💻 Author
-
-**Devam**  
-Service Bee – Serious backend. Spooky vibes. 👻🐝
+## 📄 Licensing
+This project is licensed under the MIT License.
