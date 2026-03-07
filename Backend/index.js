@@ -31,7 +31,7 @@ applySecurity(app);
 app.use(express.json());
 
 // Basic Health Check (visible in browser to confirm deployment)
-app.get("/", (req, res) => res.json({ status: "Bee-hive is Buzzing! 🐝", env: process.env.NODE_ENV || 'dev' }));
+app.get("/api/hive-status", (req, res) => res.json({ status: "Bee-hive is Buzzing! 🐝", env: process.env.NODE_ENV || 'dev' }));
 
 app.get("/api/hive-check", (req, res) => {
   res.json({

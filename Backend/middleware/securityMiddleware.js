@@ -8,7 +8,7 @@ import rateLimit from "express-rate-limit";
 export const applySecurity = (app) => {
   // CORS MUST come before helmet/ratelimit for preflight reliability
   const corsOptions = {
-    origin: true, // Echoes the origin of the request (reliable for all environments)
+    origin: (origin, callback) => callback(null, true),
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     credentials: true,

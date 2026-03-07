@@ -83,12 +83,15 @@ export const loginUser = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      console.log(`[LOGIN] User not found: ${email}`);
+      return res.status(404).json({ message: "No account found with this email." });
     }
 
+    console.log(`[LOGIN] Matching password for ${email}...`);
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      console.log(`[LOGIN] Password mismatch for ${email}`);
+      return res.status(401).json({ message: "Invalid password. Try again." });
     }
 
     // Generate OTP
