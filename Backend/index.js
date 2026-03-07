@@ -33,6 +33,17 @@ app.use(express.json());
 // Basic Health Check (visible in browser to confirm deployment)
 app.get("/", (req, res) => res.json({ status: "Bee-hive is Buzzing! 🐝", env: process.env.NODE_ENV || 'dev' }));
 
+app.get("/api/hive-check", (req, res) => {
+  res.json({
+    email_user: !!process.env.EMAIL_USER,
+    email_pass: !!process.env.EMAIL_PASS,
+    mongo_url: !!process.env.MONGODB_URL,
+    jwt_secret: !!process.env.JWT_SECRET,
+    cloudinary: !!process.env.CLOUD_NAME,
+    razorpay: !!process.env.RAZORPAY_KEY_ID
+  });
+});
+
 // routes
 app.use("/api", testRoute);
 app.use("/api/users", userRoutes);
