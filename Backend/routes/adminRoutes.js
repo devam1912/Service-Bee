@@ -2,7 +2,7 @@ import express from "express";
 import { adminLogin } from "../controllers/adminController.js";
 import { protectAdmin } from "../middleware/adminMiddleware.js";
 import Company from "../models/companyModel.js";
-import User from "../models/UserModel.js";
+import User from "../models/userModel.js";
 import Request from "../models/requestModel.js";
 import Subscription from "../models/subscriptionModel.js";
 
