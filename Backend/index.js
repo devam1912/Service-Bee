@@ -57,18 +57,18 @@ app.get("/api/test-email", async (req, res) => {
   const { to } = req.query;
   if (!to) return res.status(400).json({ message: "Provide '?to=' param" });
 
-  const success = await sendEmail(
+  const result = await sendEmail(
     to,
     "Bee Hive Test",
     "If you see this, Render email sending is ALIVE! 🧪",
     "<h1>🧪 Render Email Test</h1><p>The hive is working!</p>"
   );
 
-  if (success) return res.json({ message: "Test email sent successfully!" });
+  if (result.success) return res.json({ message: "Test email sent successfully!" });
   return res.status(500).json({
     message: "Email sending FAILED on Render.",
-    tip: "Verify EMAIL_USER and EMAIL_PASS (App Password) in Render Dashboard Settings > Env Vars.",
-    error: "Check Render logs for the full SMTP stack trace."
+    smtp_error: result.error,
+    tip: "Verify App Password in Render Env Vars."
   });
 });
 

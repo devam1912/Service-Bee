@@ -104,16 +104,16 @@ export const loginUser = async (req, res) => {
 
     // Send OTP via Email
     console.log(`[LOGIN] Sending OTP to ${user.email}...`);
-    const emailSent = await sendEmail(
+    const result = await sendEmail(
       user.email,
       "Login OTP - Service Bee",
       `Your login OTP is: ${otp}.`,
       getOtpTemplate(otp, user.name, "Secure Login")
     );
 
-    if (!emailSent) {
-      console.error(`[LOGIN] Failed to send email to ${user.email}`);
-      return res.status(500).json({ message: "Failed to send OTP email" });
+    if (!result.success) {
+      console.error(`[LOGIN] Failed to send email to ${user.email}: ${result.error}`);
+      return res.status(500).json({ message: `Email Error: ${result.error}` });
     }
 
     return res.status(200).json({

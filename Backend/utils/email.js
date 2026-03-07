@@ -4,11 +4,9 @@ dotenv.config();
 import nodemailer from "nodemailer";
 
 export const sendEmail = async (to, subject, text, html) => {
-    // Re-config dotenv just in case it's missed in some contexts
     dotenv.config();
 
     console.log(`[EMAIL SERVICE] Attempting to send to: ${to}`);
-    console.log(`[DEBUG] Auth: ${process.env.EMAIL_USER} | Pass length: ${process.env.EMAIL_PASS?.length || 0}`);
 
     const transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
@@ -21,9 +19,11 @@ export const sendEmail = async (to, subject, text, html) => {
         tls: {
             rejectUnauthorized: false
         },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000
+        connectionTimeout: 5000, // Faster timeout for debugging
+        greetingTimeout: 5000,
+        socketTimeout: 5000,
+        logger: true, // Enable logging in Render logs
+        debug: true
     });
 
     try {
@@ -35,12 +35,9 @@ export const sendEmail = async (to, subject, text, html) => {
             html
         });
         console.log(`[SUCCESS] Email sent: ${info.messageId}`);
-        return true;
+        return { success: true };
     } catch (error) {
         console.error("[CRITICAL] EMAIL SEND ERROR:", error.message);
-        if (error.code === 'EAUTH') {
-            console.error("Authentication failed. Check if App Password is correct.");
-        }
-        return false;
+        return { success: false, error: error.message };
     }
 };
