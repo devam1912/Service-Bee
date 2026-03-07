@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import axios from "axios";
+import api from "../../utils/api";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Card from "../../components/ui/Card";
@@ -38,8 +38,8 @@ export default function UserDashboard() {
             const config = { headers: { Authorization: `Bearer ${token}` } };
 
             const [companiesRes, requestsRes] = await Promise.all([
-                axios.get(`http://localhost:9876/api/companies${user?.city ? `?city=${user.city}` : ''}`, config),
-                axios.get("http://localhost:9876/api/requests", config)
+                api.get(`/api/companies${user?.city ? `?city=${user.city}` : ''}`),
+                api.get("/api/requests")
             ]);
 
             const companiesData = companiesRes.data.companies || [];
@@ -80,9 +80,8 @@ export default function UserDashboard() {
                 formData.append("attachments", bookingData.file);
             }
 
-            await axios.post("http://localhost:9876/api/requests", formData, {
+            await api.post("/api/requests", formData, {
                 headers: {
-                    Authorization: `Bearer ${token}`,
                     "Content-Type": "multipart/form-data"
                 }
             });

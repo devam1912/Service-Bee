@@ -6,7 +6,7 @@ import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { Send, Sparkles, MessageSquare } from "lucide-react";
 
-import axios from "axios";
+import api from "../utils/api";
 import ChatDisclaimer from "../components/ChatDisclaimer";
 
 export default function GlobalChat() {
@@ -39,10 +39,7 @@ export default function GlobalChat() {
 
   const fetchMessages = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:9876/api/global-chat/messages", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get("/api/global-chat/messages");
       setMessages(res.data.data || []);
       setTimeout(scrollToBottom, 100);
     } catch (err) {

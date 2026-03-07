@@ -34,9 +34,10 @@ export default function Signup() {
     setError("");
 
     try {
+      const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:9876";
       const endpoint = role === "user"
-        ? "http://localhost:9876/api/users/register"
-        : "http://localhost:9876/api/companies/register";
+        ? `${baseUrl}/api/users/register`
+        : `${baseUrl}/api/companies/register`;
 
       const payload = { ...formData };
 

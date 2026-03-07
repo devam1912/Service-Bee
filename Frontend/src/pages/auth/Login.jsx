@@ -27,9 +27,10 @@ export default function Login() {
 
     try {
       let endpoint = "";
-      if (role === "user") endpoint = "http://localhost:9876/api/users/login";
-      else if (role === "company") endpoint = "http://localhost:9876/api/companies/login";
-      else endpoint = "http://localhost:9876/api/admin/login";
+      const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:9876";
+      if (role === "user") endpoint = `${baseUrl}/api/users/login`;
+      else if (role === "company") endpoint = `${baseUrl}/api/companies/login`;
+      else endpoint = `${baseUrl}/api/admin/login`;
 
       console.log("LOGIN ATTEMPT:", { email: formData.email, role });
       const res = await axios.post(endpoint, formData);

@@ -35,9 +35,10 @@ export default function VerifyOTP() {
         setMessage("");
 
         try {
+            const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:9876";
             const endpoint = role === "user"
-                ? "http://localhost:9876/api/users/verify-otp"
-                : "http://localhost:9876/api/companies/verify-otp";
+                ? `${baseUrl}/api/users/verify-otp`
+                : `${baseUrl}/api/companies/verify-otp`;
 
             const res = await axios.post(endpoint, { email, otp });
 
@@ -60,9 +61,10 @@ export default function VerifyOTP() {
         setError("");
         setMessage("");
         try {
+            const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:9876";
             const endpoint = role === "user"
-                ? "http://localhost:9876/api/users/login" // Re-trigger registration email logic if we had a resend endpoint, for now login also sends OTP
-                : "http://localhost:9876/api/companies/login";
+                ? `${baseUrl}/api/users/login` // Re-trigger registration email logic if we had a resend endpoint, for now login also sends OTP
+                : `${baseUrl}/api/companies/login`;
 
             // Since our login logic sends OTP, we can use it to resend
             // Note: This expects the user already exists (which they do after signup)

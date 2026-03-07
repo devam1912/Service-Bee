@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import axios from "axios";
+import api from "../../utils/api";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import { Calendar, User, Clock, CheckCircle, XCircle, PlayCircle, BarChart3, Package } from "lucide-react";
@@ -17,10 +17,7 @@ export default function CompanyDashboard() {
 
     const fetchRequests = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const res = await axios.get("http://localhost:9876/api/requests/company", {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get("/api/requests/company");
             const data = res.data.requests || [];
             setRequests(data);
 
@@ -41,10 +38,8 @@ export default function CompanyDashboard() {
 
     const updateStatus = async (requestId, newStatus) => {
         try {
-            const token = localStorage.getItem("token");
-            await axios.patch(`http://localhost:9876/api/requests/${requestId}/status`,
-                { status: newStatus },
-                { headers: { Authorization: `Bearer ${token}` } }
+            await api.patch(`/api/requests/${requestId}/status`,
+                { status: newStatus }
             );
             fetchRequests();
         } catch (err) {
