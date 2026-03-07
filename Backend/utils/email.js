@@ -10,8 +10,8 @@ export const sendEmail = async (to, subject, text, html) => {
 
     const transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
+        port: 587,
+        secure: false,
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
@@ -19,10 +19,10 @@ export const sendEmail = async (to, subject, text, html) => {
         tls: {
             rejectUnauthorized: false
         },
-        connectionTimeout: 5000, // Faster timeout for debugging
-        greetingTimeout: 5000,
-        socketTimeout: 5000,
-        logger: true, // Enable logging in Render logs
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000,
+        logger: true,
         debug: true
     });
 
