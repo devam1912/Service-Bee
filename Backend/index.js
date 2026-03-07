@@ -24,8 +24,14 @@ import { setIO } from "./socket/socket.js"; // ✅ ADD THIS
 
 
 const app = express();
-app.use(express.json());
+// 1. Security (CORS/Helmet) must be first
 applySecurity(app);
+
+// 2. Body Parser
+app.use(express.json());
+
+// Basic Health Check (visible in browser to confirm deployment)
+app.get("/", (req, res) => res.json({ status: "Bee-hive is Buzzing! 🐝", env: process.env.NODE_ENV || 'dev' }));
 
 // routes
 app.use("/api", testRoute);

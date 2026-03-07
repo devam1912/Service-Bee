@@ -6,18 +6,18 @@ import rateLimit from "express-rate-limit";
 // import xss from "xss-clean";
 
 export const applySecurity = (app) => {
-  // Basic security headers
-  app.use(helmet());
-
-  // CORS configuration
+  // CORS MUST come before helmet/ratelimit for preflight reliability
   const corsOptions = {
-    origin: ["https://service-bee-frontend.onrender.com", "http://localhost:5173", "*"],
+    origin: true, // Echoes the origin of the request (reliable for all environments)
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     credentials: true,
     optionsSuccessStatus: 200,
   };
   app.use(cors(corsOptions));
+
+  // Basic security headers
+  app.use(helmet());
 
   /**
    * ❌ DISABLED FOR NODE 22
