@@ -18,7 +18,7 @@ export const applySecurity = (app) => {
     optionsSuccessStatus: 200,
   };
   app.use(cors(corsOptions));
-  app.options("(.*)", cors(corsOptions)); // Fix for Express 5 wildcard path error
+  app.options("/:path*", cors(corsOptions)); // Correct wildcard for Express 5
 
   /**
    * ❌ DISABLED FOR NODE 22
