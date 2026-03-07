@@ -5,6 +5,10 @@ import validator from "validator";
 import { sendEmail } from "../utils/email.js";
 import { getOtpTemplate } from "../utils/emailTemplates.js";
 import crypto from "crypto";
+import { OAuth2Client } from "google-auth-library";
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 
 
 export const registerUser = async (req, res) => {
@@ -213,3 +217,66 @@ export const resendOTP = async (req, res) => {
   }
 };
 
+export const googleAuthUser = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    // Verify Google Token
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email: rawEmail, name } = payload;
+    const email = rawEmail?.toLowerCase();
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create new user with dummy password and fields since Google doesn't provide them
+      const generatedPassword = crypto.randomBytes(16).toString("hex");
+      const hashPassword = await bcrypt.hash(generatedPassword, 10);
+
+      user = await User.create({
+        name,
+        email,
+        password: hashPassword,
+        mobile: "Provided via Google",
+        address: "Provided via Google",
+        city: "Provided via Google",
+        role: "user",
+        termsAccepted: true,
+        isVerified: true
+      });
+    }
+
+    // Ensure they are verified if logging in with Google
+    user.isVerified = true;
+    user.otp = null;
+    user.otpExpires = null;
+    await user.save();
+
+    const jwtToken = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES }
+    );
+
+    res.status(200).json({
+      message: "Login successful",
+      token: jwtToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        mobile: user.mobile
+      }
+    });
+
+  } catch (error) {
+    console.error("GOOGLE AUTH ERROR:", error);
+    res.status(500).json({ message: "Google Authentication Failed. Ensure GOOGLE_CLIENT_ID is correct." });
+  }
+};

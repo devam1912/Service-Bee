@@ -6,12 +6,15 @@ import Card from "../../components/ui/Card";
 import { Sparkles, Building2, User, ArrowRight } from "lucide-react";
 import api from "../../utils/api";
 import { motion } from "framer-motion";
+import { useAuth } from "../../context/AuthContext";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function Signup() {
   const navigate = useNavigate();
   const [role, setRole] = useState("user");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { login } = useAuth();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -53,6 +56,29 @@ export default function Signup() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await api.post("/api/users/google-auth", {
+        token: credentialResponse.credential
+      });
+
+      const token = res.data.token;
+      const user = res.data.user;
+
+      login(user, token);
+    } catch (err) {
+      setError(err.response?.data?.message || "Google Signup failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError("Google Signup was cancelled or failed.");
   };
 
   return (
@@ -155,6 +181,24 @@ export default function Signup() {
             )}
           </Button>
         </form>
+
+        {role === "user" && (
+          <div className="mt-6 flex flex-col items-center gap-4 w-full">
+            <div className="flex items-center gap-4 w-full">
+              <div className="flex-1 h-px bg-gray-200 dark:bg-petal-leaf/10" />
+              <span className="text-xs font-bold text-gray-400">OR CONTINUE WITH</span>
+              <div className="flex-1 h-px bg-gray-200 dark:bg-petal-leaf/10" />
+            </div>
+
+            <div className="w-full flex justify-center mt-2">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap
+              />
+            </div>
+          </div>
+        )}
 
         <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-10 font-medium">
           Already part of the hive?{" "}

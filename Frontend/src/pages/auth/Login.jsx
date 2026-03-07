@@ -7,6 +7,7 @@ import Card from "../../components/ui/Card";
 import { Sparkles, Building2, User, Shield, ArrowRight } from "lucide-react";
 import api from "../../utils/api";
 import { motion } from "framer-motion";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -52,6 +53,29 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await api.post("/api/users/google-auth", {
+        token: credentialResponse.credential
+      });
+
+      const token = res.data.token;
+      const user = res.data.user;
+
+      login(user, token);
+    } catch (err) {
+      setError(err.response?.data?.message || "Google Login failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError("Google Login was cancelled or failed.");
   };
 
   return (
@@ -133,6 +157,24 @@ export default function Login() {
             )}
           </Button>
         </form>
+
+        {role === "user" && (
+          <div className="mt-6 flex flex-col items-center gap-4 w-full">
+            <div className="flex items-center gap-4 w-full">
+              <div className="flex-1 h-px bg-gray-200 dark:bg-petal-leaf/10" />
+              <span className="text-xs font-bold text-gray-400">OR CONTINUE WITH</span>
+              <div className="flex-1 h-px bg-gray-200 dark:bg-petal-leaf/10" />
+            </div>
+
+            <div className="w-full flex justify-center mt-2">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap
+              />
+            </div>
+          </div>
+        )}
 
         <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-10 font-medium">
           New to the hive?{" "}
