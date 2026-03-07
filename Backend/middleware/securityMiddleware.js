@@ -18,7 +18,7 @@ export const applySecurity = (app) => {
     optionsSuccessStatus: 200,
   };
   app.use(cors(corsOptions));
-  app.options("*", cors(corsOptions)); // Enable pre-flight for all routes
+  app.options("(.*)", cors(corsOptions)); // Fix for Express 5 wildcard path error
 
   /**
    * ❌ DISABLED FOR NODE 22
