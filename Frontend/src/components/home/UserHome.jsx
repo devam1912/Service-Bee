@@ -708,77 +708,93 @@ export default function UserHome() {
                 {showChatModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowChatModal(false)} />
-                        <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="w-full max-w-lg bg-white dark:bg-[#15171b] rounded-[48px] overflow-hidden shadow-2xl border border-white/5 relative z-10 flex flex-col h-[600px] max-h-[85vh]">
-                            <div className="p-8 bg-petal-rose text-white flex justify-between items-center">
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg bg-white dark:bg-[#1a1c21] rounded-[48px] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] border border-white/10 relative z-10 flex flex-col h-[650px] max-h-[90vh]">
+
+                            {/* Header */}
+                            <div className="p-8 bg-white/50 dark:bg-white/5 backdrop-blur-xl border-b border-gray-100 dark:border-white/5 flex justify-between items-center relative overflow-hidden shrink-0">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-petal-rose" />
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Provider Chat</p>
-                                    <h3 className="text-xl font-black">{activeChatRequest?.company?.name || 'Service Provider'}</h3>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">Consulting: <span className="text-petal-rose">{activeChatRequest?.serviceName}</span></p>
+                                    </div>
+                                    <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{activeChatRequest?.company?.name || 'Service Provider'}</h3>
                                 </div>
-                                <button onClick={() => setShowChatModal(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={24} /></button>
+                                <button onClick={() => setShowChatModal(false)} className="w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-white/5 hover:bg-petal-rose/10 text-gray-400 hover:text-petal-rose rounded-2xl transition-all">
+                                    <X size={20} />
+                                </button>
                             </div>
 
-                            <div className="flex-grow p-8 overflow-y-auto custom-scrollbar space-y-4">
-                                <div className="p-4 bg-amber-50 dark:bg-amber-500/5 rounded-2xl border border-amber-200/50 dark:border-amber-500/20 text-center">
-                                    <p className="text-xs font-bold text-amber-600 uppercase mb-1 tracking-widest">Service Details</p>
-                                    <p className="text-sm font-black text-gray-800 dark:text-white italic">"{activeChatRequest?.serviceName}"</p>
-                                    {activeChatRequest?.negotiationStatus === 'price_offered' && (
-                                        <div className="mt-3 p-3 bg-emerald-500 text-white rounded-xl">
-                                            <p className="text-[10px] font-black uppercase">Special Offer Received!</p>
-                                            <p className="text-lg font-black">₹{activeChatRequest.amount}</p>
-                                            <p className="text-[9px] opacity-80 mt-1">Accept by paying in "My Bookings"</p>
-                                        </div>
-                                    )}
-                                </div>
+                            {/* Scrollable Messages Area */}
+                            <div className="flex-grow p-8 overflow-y-auto custom-scrollbar space-y-6">
+                                {activeChatRequest?.negotiationStatus === 'price_offered' && (
+                                    <div className="p-6 bg-emerald-500/10 rounded-[32px] border border-emerald-500/20 text-center relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500/50" />
+                                        <p className="text-[10px] font-black text-emerald-600 uppercase mb-2 tracking-widest">Special Hive Offer</p>
+                                        <p className="text-3xl font-black text-emerald-700 dark:text-emerald-400 italic">₹{activeChatRequest.amount}</p>
+                                        <p className="text-[9px] font-bold text-emerald-600/60 mt-2 uppercase tracking-widest">Accept by paying in your bookings hub</p>
+                                    </div>
+                                )}
 
                                 {activeChatRequest?.status === 'completed' && (
-                                    <div className="p-6 bg-petal-rose/10 rounded-2xl border border-petal-rose/20 text-center">
-                                        <p className="text-sm font-bold text-petal-rose italic">"The service has concluded. Use the review section below to share your experience with the community."</p>
+                                    <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 text-center">
+                                        <p className="text-sm font-bold text-emerald-600 italic">"The service is complete. Thank you for using ServiceBee!"</p>
                                     </div>
                                 )}
 
                                 {activeChatRequest?.status === 'rejected' && (
-                                    <div className="p-6 bg-rose-500/10 rounded-2xl border border-rose-500/20 text-center">
-                                        <p className="text-sm font-bold text-rose-500 italic">"This request has been rejected. The conversation is now closed."</p>
+                                    <div className="p-6 bg-rose-500/10 rounded-3xl border border-rose-500/20 text-center">
+                                        <p className="text-sm font-bold text-rose-500 italic">"This request was not accepted."</p>
                                     </div>
                                 )}
 
-                                <div className="space-y-4">
+                                <div className="space-y-4 pb-4">
                                     {chatMessages.length > 0 ? chatMessages.map((msg, idx) => {
                                         const isMe = msg.senderType === "User";
                                         return (
                                             <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                                <div className={`max-w-[80%] p-4 rounded-3xl shadow-sm ${isMe ? 'bg-petal-rose text-white rounded-tr-none' : 'bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-white rounded-tl-none'}`}>
-                                                    <p className="text-sm font-medium">{msg.text}</p>
-                                                    <p className={`text-[10px] mt-1 opacity-60 ${isMe ? 'text-white' : 'text-gray-500'}`}>
+                                                <div className={`max-w-[85%] p-4 rounded-[28px] shadow-sm ${isMe ? 'bg-petal-rose text-white rounded-tr-none' : 'bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-white rounded-tl-none'}`}>
+                                                    <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
+                                                    <p className={`text-[9px] mt-2 font-bold uppercase tracking-widest opacity-40 ${isMe ? 'text-white' : 'text-gray-500'}`}>
                                                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </p>
                                                 </div>
                                             </div>
                                         );
                                     }) : (
-                                        <p className="text-center py-10 text-gray-400 text-sm italic">No messages yet. Start the conversation!</p>
+                                        <div className="py-12 text-center space-y-4">
+                                            <div className="w-16 h-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto opacity-50">
+                                                <MessageCircle className="text-gray-400" size={32} />
+                                            </div>
+                                            <p className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em]">Start the buzz...</p>
+                                        </div>
                                     )}
                                     <div ref={messagesEndRef} />
                                 </div>
                             </div>
 
-                            <div className="p-8 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-transparent">
+                            {/* Footer / Input */}
+                            <div className="p-8 bg-white/50 dark:bg-[#1a1c21] backdrop-blur-2xl border-t border-gray-100 dark:border-white/10 shrink-0">
                                 {(activeChatRequest?.status !== 'completed' && activeChatRequest?.status !== 'rejected') ? (
-                                    <div className="flex gap-3">
+                                    <div className="relative group">
                                         <input
-                                            placeholder="Type a message..."
-                                            className="flex-grow bg-white dark:bg-white/5 border-none rounded-2xl px-6 text-sm font-medium focus:ring-2 focus:ring-petal-rose"
+                                            placeholder="Type your message..."
+                                            className="w-full h-16 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-[28px] pl-8 pr-20 text-sm font-medium text-gray-800 dark:text-white focus:ring-4 focus:ring-petal-rose/10 transition-all outline-none"
                                             value={newMessage}
                                             onChange={e => setNewMessage(e.target.value)}
                                             onKeyPress={e => e.key === 'Enter' && sendMessage()}
                                         />
-                                        <Button onClick={sendMessage} className="w-14 h-14 bg-petal-rose text-white rounded-2xl flex items-center justify-center border-none shadow-lg shadow-petal-rose/20">
-                                            <ChevronRight size={24} />
-                                        </Button>
+                                        <button
+                                            onClick={sendMessage}
+                                            className="absolute right-2 top-2 w-12 h-12 bg-petal-rose text-white rounded-[20px] flex items-center justify-center hover:opacity-95 active:scale-95 transition-all shadow-lg shadow-petal-rose/20 group-hover:shadow-petal-rose/40"
+                                        >
+                                            <ArrowRight size={24} />
+                                        </button>
                                     </div>
                                 ) : (
-                                    <div className="text-center">
-                                        <Button variant="ghost" className="text-petal-rose font-black uppercase tracking-widest text-xs" onClick={() => setShowChatModal(false)}>Close Chat</Button>
+                                    <div className="text-center group">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-6 group-hover:text-petal-rose transition-colors">Conversation Archived</p>
+                                        <Button variant="ghost" className="w-full h-14 bg-gray-100 dark:bg-white/5 text-gray-500 font-black uppercase tracking-widest text-xs rounded-[20px] border-none" onClick={() => setShowChatModal(false)}>Back to Hub</Button>
                                     </div>
                                 )}
                             </div>
