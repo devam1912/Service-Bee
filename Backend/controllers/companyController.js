@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Company from "../models/companyModel.js";
 import { sendEmail } from "../utils/email.js";
+import { getOtpTemplate } from "../utils/emailTemplates.js";
 import validator from "validator";
 
 const generateToken = (id) => {
@@ -14,7 +15,7 @@ export const registerCompany = async (req, res) => {
   try {
     const {
       name,
-      email,
+      email: rawEmail,
       password,
       mobile,
       serviceCategory,
@@ -22,6 +23,7 @@ export const registerCompany = async (req, res) => {
       city,
       description,
     } = req.body;
+    const email = rawEmail?.toLowerCase();
 
     if (!email || !password || !name || !mobile) {
       return res.status(400).json({ message: "Required fields missing" });
@@ -62,7 +64,7 @@ export const registerCompany = async (req, res) => {
       company.email,
       "Welcome to Service Bee - Verify Your Business",
       `Your business verification OTP is: ${otp}.`,
-      `<h1>Welcome to Service Bee</h1><p>Thank you for partnering with us! Your business verification OTP is: <strong>${otp}</strong>.</p>`
+      getOtpTemplate(otp, name, "Business Verification")
     );
 
     res.status(201).json({
@@ -77,7 +79,8 @@ export const registerCompany = async (req, res) => {
 
 export const loginCompany = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email: rawEmail, password } = req.body;
+    const email = rawEmail?.toLowerCase();
 
     const company = await Company.findOne({ email });
     if (!company) {
@@ -101,8 +104,8 @@ export const loginCompany = async (req, res) => {
     const emailSent = await sendEmail(
       company.email,
       "Company Login OTP - Service Bee",
-      `Your login OTP is: ${otp}. It expires in 10 minutes.`,
-      `<h1>Company Verification</h1><p>Your login OTP is: <strong>${otp}</strong>. It expires in 10 minutes.</p>`
+      `Your login OTP is: ${otp}.`,
+      getOtpTemplate(otp, company.name, "Company Access")
     );
 
     if (!emailSent) {
@@ -120,13 +123,17 @@ export const loginCompany = async (req, res) => {
 
 export const verifyCompanyOTP = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email: rawEmail, otp: rawOtp } = req.body;
+    const email = rawEmail?.toLowerCase();
+    const otp = rawOtp?.toString().trim();
 
-    if (!email || !otp) {
-      return res.status(400).json({ message: "Email and OTP are required" });
-    }
+    console.log(`[VERIFY] Company attempt for ${email}. Provided: "${otp}"`);
 
     const company = await Company.findOne({ email });
+
+    if (company) {
+      console.log(`[VERIFY] Company found. Stored: "${company.otp}". Expired: ${company.otpExpires < new Date()}`);
+    }
 
     if (!company || company.otp !== otp || company.otpExpires < new Date()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
@@ -152,6 +159,33 @@ export const verifyCompanyOTP = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const resendCompanyOTP = async (req, res) => {
+  try {
+    const { email: rawEmail } = req.body;
+    const email = rawEmail?.toLowerCase();
+
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const company = await Company.findOne({ email });
+    if (!company) return res.status(404).json({ message: "Company not found" });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    company.otp = otp;
+    company.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await company.save();
+
+    await sendEmail(
+      email,
+      "Login OTP - Service Bee",
+      `Your new OTP is: ${otp}`,
+      getOtpTemplate(otp, company.name, "Company OTP Resend")
+    );
+    res.json({ message: "OTP resent successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to resend OTP" });
   }
 };
 

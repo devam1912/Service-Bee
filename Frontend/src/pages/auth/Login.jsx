@@ -31,13 +31,14 @@ export default function Login() {
       else if (role === "company") endpoint = `/api/companies/login`;
       else endpoint = `/api/admin/login`;
 
-      console.log("LOGIN ATTEMPT:", { email: formData.email, role });
-      const res = await api.post(endpoint, formData);
+      const normalizedEmail = formData.email?.toLowerCase();
+      console.log("LOGIN ATTEMPT:", { email: normalizedEmail, role });
+      const res = await api.post(endpoint, { ...formData, email: normalizedEmail });
       console.log("LOGIN RESPONSE:", res.data);
 
       if (res.data.message?.toLowerCase().includes("otp")) {
         // Redirect to OTP verification
-        navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}&role=${role}`);
+        navigate(`/verify-otp?email=${encodeURIComponent(normalizedEmail)}&role=${role}`);
         return;
       }
 

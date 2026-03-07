@@ -1,5 +1,5 @@
 import express from "express";
-import { registerCompany, loginCompany, verifyCompanyOTP, getCompanyProfile, toggleActiveStatus, updateServiceCatalog, updateUnavailableDates } from "../controllers/companyController.js";
+import { registerCompany, loginCompany, verifyCompanyOTP, resendCompanyOTP, getCompanyProfile, toggleActiveStatus, updateServiceCatalog, updateUnavailableDates } from "../controllers/companyController.js";
 import Company from "../models/companyModel.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -24,6 +24,7 @@ router.get("/", async (req, res) => {
 router.post("/register", registerCompany);
 router.post("/login", loginCompany);
 router.post("/verify-otp", verifyCompanyOTP);
+router.post("/resend-otp", resendCompanyOTP);
 router.get("/profile", protect, getCompanyProfile);
 router.patch("/toggle-active", protect, toggleActiveStatus);
 router.put("/catalog", protect, updateServiceCatalog);

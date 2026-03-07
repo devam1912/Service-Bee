@@ -40,7 +40,7 @@ export const createRequest = async (req, res) => {
     }
 
     if (!company.isActive) {
-      return res.status(400).json({ message: "This provider is currently не active and not accepting new requests." });
+      return res.status(400).json({ message: "This provider is currently NOT active and not accepting new requests." });
     }
 
     let amount = 0;

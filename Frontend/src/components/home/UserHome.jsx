@@ -150,8 +150,19 @@ export default function UserHome() {
         e.preventDefault();
         if (!selectedCompany) return;
         setBookingLoading(true);
+        const data = new FormData();
+        data.append("companyId", selectedCompany._id);
+        data.append("serviceName", bookingData.serviceName);
+        data.append("bookingDate", bookingData.bookingDate);
+        data.append("userNote", bookingData.userNote || "");
+        data.append("isCustom", bookingData.isCustom || false);
+
+        if (selectedFile) {
+            data.append("attachments", selectedFile);
+        }
+
         try {
-            const reqRes = await api.post("/api/requests", formData, {
+            const reqRes = await api.post("/api/requests", data, {
                 headers: {
                     "Content-Type": "multipart/form-data"
                 }

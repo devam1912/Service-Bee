@@ -38,7 +38,7 @@ export default function Signup() {
         ? `/api/users/register`
         : `/api/companies/register`;
 
-      const payload = { ...formData };
+      const payload = { ...formData, email: formData.email?.toLowerCase() };
 
       if (role === 'company') {
         if (!payload.services) payload.services = [];
@@ -46,7 +46,7 @@ export default function Signup() {
       }
 
       await api.post(endpoint, payload);
-      navigate(`/verify-otp?email=${formData.email}&role=${role}`);
+      navigate(`/verify-otp?email=${encodeURIComponent(payload.email)}&role=${role}`);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || err.response?.data?.error || "Registration failed.");

@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../utils/api";
 import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
 import { motion } from "framer-motion";
+import { Shield, Activity, Briefcase, TrendingUp, X, Users } from "lucide-react";
 
 export default function AdminDashboard() {
     const { user } = useAuth();

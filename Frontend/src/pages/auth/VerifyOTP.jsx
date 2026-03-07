@@ -61,10 +61,10 @@ export default function VerifyOTP() {
         setMessage("");
         try {
             const endpoint = role === "user"
-                ? `/api/users/login`
-                : `/api/companies/login`;
+                ? `/api/users/resend-otp`
+                : `/api/companies/resend-otp`;
 
-            await api.post(endpoint, { email, password: "resend_request" }); // This is a bit hacky, normally we'd have a /resend-otp
+            await api.post(endpoint, { email });
             setMessage("A new OTP has been sent to your email.");
         } catch (err) {
             // If they just signed up, they can try logging in to get a new OTP

@@ -3,12 +3,14 @@ import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 import validator from "validator";
 import { sendEmail } from "../utils/email.js";
+import { getOtpTemplate } from "../utils/emailTemplates.js";
 import crypto from "crypto";
 
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, mobile, address, city } = req.body;
+    const { name, email: rawEmail, password, mobile, address, city } = req.body;
+    const email = rawEmail?.toLowerCase();
 
     if (!name || !email || !password || !mobile) {
       return res.status(400).json({ message: "Name, email, password and mobile are required" });
@@ -56,7 +58,7 @@ export const registerUser = async (req, res) => {
       user.email,
       "Welcome to Service Bee - Verify Your Account",
       `Your verification OTP is: ${otp}.`,
-      `<h1>Welcome to Service Bee</h1><p>Thank you for joining! Your verification OTP is: <strong>${otp}</strong>.</p>`
+      getOtpTemplate(otp, name, "Account Verification")
     );
 
     return res.status(201).json({
@@ -72,7 +74,8 @@ export const registerUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email: rawEmail, password } = req.body;
+    const email = rawEmail?.toLowerCase();
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
@@ -97,14 +100,16 @@ export const loginUser = async (req, res) => {
     await user.save();
 
     // Send OTP via Email
+    console.log(`[LOGIN] Sending OTP to ${user.email}...`);
     const emailSent = await sendEmail(
       user.email,
       "Login OTP - Service Bee",
-      `Your login OTP is: ${otp}. It expires in 10 minutes.`,
-      `<h1>Login Verification</h1><p>Your login OTP is: <strong>${otp}</strong>. It expires in 10 minutes.</p>`
+      `Your login OTP is: ${otp}.`,
+      getOtpTemplate(otp, user.name, "Secure Login")
     );
 
     if (!emailSent) {
+      console.error(`[LOGIN] Failed to send email to ${user.email}`);
       return res.status(500).json({ message: "Failed to send OTP email" });
     }
 
@@ -120,13 +125,17 @@ export const loginUser = async (req, res) => {
 
 export const verifyOTP = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email: rawEmail, otp: rawOtp } = req.body;
+    const email = rawEmail?.toLowerCase();
+    const otp = rawOtp?.toString().trim();
 
-    if (!email || !otp) {
-      return res.status(400).json({ message: "Email and OTP are required" });
-    }
+    console.log(`[VERIFY] Attempt for ${email}. Provided: "${otp}"`);
 
     const user = await User.findOne({ email });
+
+    if (user) {
+      console.log(`[VERIFY] User found. Stored: "${user.otp}". Expired: ${user.otpExpires < new Date()}`);
+    }
 
     if (!user || user.otp !== otp || user.otpExpires < new Date()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
@@ -158,6 +167,33 @@ export const verifyOTP = async (req, res) => {
   } catch (error) {
     console.error("VERIFY OTP ERROR:", error);
     return res.status(500).json({ message: "Verification failed" });
+  }
+};
+
+export const resendOTP = async (req, res) => {
+  try {
+    const { email: rawEmail } = req.body;
+    const email = rawEmail?.toLowerCase();
+
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
+    await sendEmail(
+      email,
+      "Login OTP - Service Bee",
+      `Your new OTP is: ${otp}`,
+      getOtpTemplate(otp, user.name, "OTP Resend")
+    );
+    res.json({ message: "OTP resent successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to resend OTP" });
   }
 };
 

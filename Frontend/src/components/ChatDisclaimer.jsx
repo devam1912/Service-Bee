@@ -9,6 +9,9 @@ export default function ChatDisclaimer() {
 
     useEffect(() => {
         const checkTerms = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
             try {
                 const res = await api.get("/api/terms/status");
 
@@ -16,7 +19,10 @@ export default function ChatDisclaimer() {
                     setIsOpen(true);
                 }
             } catch (err) {
-                console.error("Error checking terms:", err);
+                // Silently handle 401 Unauthorized errors as they are expected if token is invalid
+                if (err.response?.status !== 401) {
+                    console.error("Error checking terms:", err);
+                }
             }
         };
         checkTerms();
@@ -89,4 +95,3 @@ export default function ChatDisclaimer() {
         </AnimatePresence>
     );
 }
-
