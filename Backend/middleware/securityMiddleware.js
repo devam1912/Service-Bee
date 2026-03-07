@@ -6,20 +6,6 @@ import rateLimit from "express-rate-limit";
 // import xss from "xss-clean";
 
 export const applySecurity = (app) => {
-  // 1. Manual CORS (Bulletproof for Render/Cloudflare)
-  app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    res.header("Access-Control-Allow-Origin", origin || "*");
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
-    res.header("Access-Control-Allow-Credentials", "true");
-
-    if (req.method === "OPTIONS") {
-      return res.status(200).end();
-    }
-    next();
-  });
-
   // Basic security headers
   app.use(helmet());
 

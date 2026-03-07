@@ -25,10 +25,29 @@ import { sendEmail } from "./utils/email.js";
 
 
 const app = express();
-// 1. Security (CORS/Helmet) must be first
+
+// 1. ABSOLUTE FIRST: CORS Manual Handler
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// 2. Security (Helmet/Other)
 applySecurity(app);
 
-// 2. Body Parser
+// 3. Body Parser
 app.use(express.json());
 
 // Basic Health Check (visible in browser to confirm deployment)
@@ -46,7 +65,11 @@ app.get("/api/test-email", async (req, res) => {
   );
 
   if (success) return res.json({ message: "Test email sent successfully!" });
-  return res.status(500).json({ message: "Email sending FAILED in production. Check Render logs." });
+  return res.status(500).json({
+    message: "Email sending FAILED on Render.",
+    tip: "Verify EMAIL_USER and EMAIL_PASS (App Password) in Render Dashboard Settings > Env Vars.",
+    error: "Check Render logs for the full SMTP stack trace."
+  });
 });
 
 app.get("/api/hive-check", (req, res) => {
