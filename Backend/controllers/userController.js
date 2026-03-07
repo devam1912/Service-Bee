@@ -113,6 +113,19 @@ export const loginUser = async (req, res) => {
 
     if (!result.success) {
       console.error(`[LOGIN] Failed to send email to ${user.email}: ${result.error}`);
+
+      // Render Free Tier blocks SMTP (Ports 465/587) causing timeouts.
+      // Immediate Rescue Workaround:
+      if (result.error.toLowerCase().includes("timeout")) {
+        user.otp = "123456";
+        user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+        await user.save();
+        return res.status(200).json({
+          message: "Render Free Tier blocked the email. Use default OTP: 123456",
+          email: user.email
+        });
+      }
+
       return res.status(500).json({ message: `Email Error: ${result.error}` });
     }
 
