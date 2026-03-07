@@ -1,6 +1,9 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first"); // Force IPv4 to prevent ENETUNREACH on Render's IPv6-less containers
+
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
