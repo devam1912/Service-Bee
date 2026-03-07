@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../hooks/useSocket";
-import axios from "axios";
+import api from "../../utils/api";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Card from "../../components/ui/Card";
@@ -105,12 +105,10 @@ export default function UserHome() {
 
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const config = { headers: { Authorization: `Bearer ${token}` } };
             const cityQuery = user?.city ? `?city=${user.city}` : '';
             const [companiesRes, requestsRes] = await Promise.all([
-                axios.get(`http://localhost:9876/api/companies${cityQuery}`, config),
-                axios.get("http://localhost:9876/api/requests", config)
+                api.get(`/api/companies${cityQuery}`),
+                api.get("/api/requests")
             ]);
             setCompanies(companiesRes.data.companies || []);
             setRequests(requestsRes.data.requests || []);
@@ -123,7 +121,7 @@ export default function UserHome() {
 
     const fetchReviews = async (companyId) => {
         try {
-            const res = await axios.get(`http://localhost:9876/api/reviews/company/${companyId}`);
+            const res = await api.get(`/api/reviews/company/${companyId}`);
             setReviews(res.data || []);
         } catch (err) {
             console.error("Failed to fetch reviews", err);
@@ -132,10 +130,7 @@ export default function UserHome() {
 
     const fetchMessages = async (requestId) => {
         try {
-            const token = localStorage.getItem("token");
-            const res = await axios.get(`http://localhost:9876/api/requests/${requestId}/messages`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/api/requests/${requestId}/messages`);
             setChatMessages(res.data || []);
             setTimeout(scrollToBottom, 100);
         } catch (err) {
@@ -156,20 +151,8 @@ export default function UserHome() {
         if (!selectedCompany) return;
         setBookingLoading(true);
         try {
-            const token = localStorage.getItem("token");
-            const formData = new FormData();
-            formData.append("companyId", selectedCompany._id);
-            formData.append("serviceName", bookingData.serviceName);
-            formData.append("bookingDate", bookingData.bookingDate);
-            formData.append("userNote", bookingData.userNote);
-
-            if (selectedFile) {
-                formData.append("attachments", selectedFile);
-            }
-
-            const reqRes = await axios.post("http://localhost:9876/api/requests", formData, {
+            const reqRes = await api.post("/api/requests", formData, {
                 headers: {
-                    Authorization: `Bearer ${token}`,
                     "Content-Type": "multipart/form-data"
                 }
             });
@@ -185,7 +168,7 @@ export default function UserHome() {
             fetchData();
 
             // Trigger Razorpay Payment
-            const payRes = await axios.post("http://localhost:9876/api/payments/create-order", { requestId }, { headers: { Authorization: `Bearer ${token}` } });
+            const payRes = await api.post("/api/payments/create-order", { requestId });
 
             const options = {
                 key: payRes.data.keyId,
@@ -196,11 +179,11 @@ export default function UserHome() {
                 order_id: payRes.data.orderId,
                 handler: async (response) => {
                     try {
-                        await axios.post("http://localhost:9876/api/payments/verify", {
+                        await api.post("/api/payments/verify", {
                             orderId: payRes.data.orderId,
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature
-                        }, { headers: { Authorization: `Bearer ${token}` } });
+                        });
 
                         alert("Payment Confirmed! Your booking is now official.");
                         setActiveTab("my-requests");
@@ -235,8 +218,7 @@ export default function UserHome() {
 
     const handlePayNow = async (requestId, serviceName) => {
         try {
-            const token = localStorage.getItem("token");
-            const res = await axios.post("http://localhost:9876/api/payments/create-order", { requestId }, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await api.post("/api/payments/create-order", { requestId });
 
             const options = {
                 key: res.data.keyId,
@@ -247,11 +229,11 @@ export default function UserHome() {
                 order_id: res.data.orderId,
                 handler: async (response) => {
                     try {
-                        await axios.post("http://localhost:9876/api/payments/verify", {
+                        await api.post("/api/payments/verify", {
                             orderId: res.data.orderId,
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature
-                        }, { headers: { Authorization: `Bearer ${token}` } });
+                        });
 
                         alert("Payment Confirmed! Your booking is now official.");
                         fetchData();
@@ -277,8 +259,7 @@ export default function UserHome() {
     const sendMessage = async () => {
         if (!newMessage.trim() || activeChatRequest?.status === 'completed' || activeChatRequest?.status === 'rejected') return;
         try {
-            const token = localStorage.getItem("token");
-            await axios.post(`http://localhost:9876/api/requests/${activeChatRequest._id}/messages`, { text: newMessage }, { headers: { Authorization: `Bearer ${token}` } });
+            await api.post(`/api/requests/${activeChatRequest._id}/messages`, { text: newMessage });
             setNewMessage("");
             // In a real app, socket would update this, but for now let's hope it feels snappy
         } catch (err) {
@@ -291,12 +272,11 @@ export default function UserHome() {
         if (!reviewingRequest) return;
         setReviewLoading(true);
         try {
-            const token = localStorage.getItem("token");
-            await axios.post("http://localhost:9876/api/reviews", {
+            await api.post("/api/reviews", {
                 requestId: reviewingRequest._id,
                 rating,
                 comment
-            }, { headers: { Authorization: `Bearer ${token}` } });
+            });
 
             alert("Thank you for your review!");
             setReviewModalOpen(false);

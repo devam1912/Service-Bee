@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
-import Card from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import { Check, X, Shield, Users, Briefcase, Activity, TrendingUp } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import api from "../../utils/api";
+import Button from "../../components/ui/Button";
 import { motion } from "framer-motion";
 
 export default function AdminDashboard() {
@@ -23,14 +21,11 @@ export default function AdminDashboard() {
 
     const fetchDashboardData = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-
             const [statsRes, companiesRes, usersRes, requestsRes] = await Promise.all([
-                axios.get("http://localhost:9876/api/admin/stats", config),
-                axios.get("http://localhost:9876/api/admin/companies", config),
-                axios.get("http://localhost:9876/api/admin/users", config),
-                axios.get("http://localhost:9876/api/admin/requests", config)
+                api.get("/api/admin/stats"),
+                api.get("/api/admin/companies"),
+                api.get("/api/admin/users"),
+                api.get("/api/admin/requests")
             ]);
 
             const s = statsRes.data;
@@ -57,11 +52,8 @@ export default function AdminDashboard() {
 
     const handleVerify = async (id, action) => {
         try {
-            const token = localStorage.getItem("token");
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-
             if (action === 'verify') {
-                await axios.patch(`http://localhost:9876/api/admin/companies/${id}/verify`, {}, config);
+                await api.patch(`/api/admin/companies/${id}/verify`);
             } else {
                 // For 'defer', we could just delete or flag it. For now, let's just log.
                 console.log("Company deferred:", id);

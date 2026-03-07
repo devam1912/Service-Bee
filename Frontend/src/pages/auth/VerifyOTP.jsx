@@ -4,7 +4,7 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Card from "../../components/ui/Card";
 import { ShieldCheck, ArrowRight, RefreshCw } from "lucide-react";
-import axios from "axios";
+import api from "../../utils/api";
 import { motion } from "framer-motion";
 
 import { useAuth } from "../../context/AuthContext";
@@ -35,12 +35,11 @@ export default function VerifyOTP() {
         setMessage("");
 
         try {
-            const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:9876";
             const endpoint = role === "user"
-                ? `${baseUrl}/api/users/verify-otp`
-                : `${baseUrl}/api/companies/verify-otp`;
+                ? `/api/users/verify-otp`
+                : `/api/companies/verify-otp`;
 
-            const res = await axios.post(endpoint, { email, otp });
+            const res = await api.post(endpoint, { email, otp });
 
             setMessage("Verification successful! Welcoming to the hive...");
             const token = res.data.token;
@@ -61,14 +60,11 @@ export default function VerifyOTP() {
         setError("");
         setMessage("");
         try {
-            const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:9876";
             const endpoint = role === "user"
-                ? `${baseUrl}/api/users/login` // Re-trigger registration email logic if we had a resend endpoint, for now login also sends OTP
-                : `${baseUrl}/api/companies/login`;
+                ? `/api/users/login`
+                : `/api/companies/login`;
 
-            // Since our login logic sends OTP, we can use it to resend
-            // Note: This expects the user already exists (which they do after signup)
-            await axios.post(endpoint, { email, password: "resend_request" }); // This is a bit hacky, normally we'd have a /resend-otp
+            await api.post(endpoint, { email, password: "resend_request" }); // This is a bit hacky, normally we'd have a /resend-otp
             setMessage("A new OTP has been sent to your email.");
         } catch (err) {
             // If they just signed up, they can try logging in to get a new OTP

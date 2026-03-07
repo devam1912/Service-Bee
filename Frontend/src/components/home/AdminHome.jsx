@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../utils/api";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { Shield, Users, Briefcase, Activity, TrendingUp, X, Check, Search, DollarSign, ArrowRight, Trash2 } from "lucide-react";
@@ -25,9 +25,7 @@ export default function AdminHome() {
 
     const fetchStats = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-            const res = await axios.get("http://localhost:9876/api/admin/stats", config);
+            const res = await api.get("/api/admin/stats");
             setStats(res.data);
         } catch (err) {
             console.error(err);
@@ -38,9 +36,7 @@ export default function AdminHome() {
 
     const fetchTabData = async (tab) => {
         try {
-            const token = localStorage.getItem("token");
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-            const res = await axios.get(`http://localhost:9876/api/admin/${tab}`, config);
+            const res = await api.get(`/api/admin/${tab}`);
             if (tab === "users") setUsers(res.data);
             if (tab === "companies") setCompanies(res.data);
             if (tab === "requests") setRequests(res.data);
@@ -51,8 +47,7 @@ export default function AdminHome() {
 
     const handleVerify = async (id) => {
         try {
-            const token = localStorage.getItem("token");
-            await axios.patch(`http://localhost:9876/api/admin/companies/${id}/verify`, {}, { headers: { Authorization: `Bearer ${token}` } });
+            await api.patch(`/api/admin/companies/${id}/verify`, {});
             fetchStats();
             if (activeTab === "companies") fetchTabData("companies");
             else fetchTabData("overview");
@@ -64,8 +59,7 @@ export default function AdminHome() {
     const handleDeleteUser = async (id) => {
         if (!window.confirm("Are you sure you want to remove this member?")) return;
         try {
-            const token = localStorage.getItem("token");
-            await axios.delete(`http://localhost:9876/api/admin/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+            await api.delete(`/api/admin/users/${id}`);
             fetchTabData("users");
             fetchStats();
         } catch (err) {
@@ -76,8 +70,7 @@ export default function AdminHome() {
     const handleDeleteCompany = async (id) => {
         if (!window.confirm("Are you sure you want to remove this bee?")) return;
         try {
-            const token = localStorage.getItem("token");
-            await axios.delete(`http://localhost:9876/api/admin/companies/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+            await api.delete(`/api/admin/companies/${id}`);
             fetchTabData("companies");
             fetchStats();
         } catch (err) {

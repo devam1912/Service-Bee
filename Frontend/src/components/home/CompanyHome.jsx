@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../hooks/useSocket";
-import axios from "axios";
+import api from "../../utils/api";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { Clock, PlayCircle, CheckCircle, Package, User, Calendar, Users, Activity, Briefcase, Plus, Bell, ChevronRight, Star, ShieldCheck, Zap, Globe, Sparkles, X, MessageCircle, Banknote, Edit3, Trash2, MapPin, ArrowRight } from "lucide-react";
@@ -80,12 +80,9 @@ export default function CompanyHome() {
     const fetchAllData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("token");
-            if (!token) throw new Error("No access token found. Please re-login.");
-
             const [reqRes, profRes] = await Promise.all([
-                axios.get("http://localhost:9876/api/requests/company", { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get("http://localhost:9876/api/companies/profile", { headers: { Authorization: `Bearer ${token}` } })
+                api.get("/api/requests/company"),
+                api.get("/api/companies/profile")
             ]);
 
             const reqData = reqRes.data.requests || [];
@@ -142,8 +139,7 @@ export default function CompanyHome() {
         if (!confirmUpgrade) return;
 
         try {
-            const token = localStorage.getItem("token");
-            const res = await axios.post("http://localhost:9876/api/payments/premium/create-order", { plan }, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await api.post("/api/payments/premium/create-order", { plan });
 
             const options = {
                 key: res.data.keyId,
@@ -154,11 +150,11 @@ export default function CompanyHome() {
                 order_id: res.data.orderId,
                 handler: async (response) => {
                     try {
-                        await axios.post("http://localhost:9876/api/payments/premium/verify", {
+                        await api.post("/api/payments/premium/verify", {
                             orderId: res.data.orderId,
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature
-                        }, { headers: { Authorization: `Bearer ${token}` } });
+                        });
 
                         alert("Upgrade Successful! You are now a Premium Bee.");
                         setShowPremiumModal(false);
@@ -187,8 +183,7 @@ export default function CompanyHome() {
 
     const toggleActiveStatus = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const res = await axios.patch("http://localhost:9876/api/companies/toggle-active", {}, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await api.patch("/api/companies/toggle-active", {});
             setProfile(prev => ({ ...prev, isActive: res.data.isActive }));
             alert(res.data.message);
         } catch (err) {
@@ -198,8 +193,7 @@ export default function CompanyHome() {
 
     const updateStatus = async (requestId, newStatus) => {
         try {
-            const token = localStorage.getItem("token");
-            await axios.patch(`http://localhost:9876/api/requests/${requestId}/status`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } });
+            await api.patch(`/api/requests/${requestId}/status`, { status: newStatus });
             fetchAllData();
         } catch (err) {
             alert(err.response?.data?.message || "Failed to update status.");
@@ -208,8 +202,7 @@ export default function CompanyHome() {
 
     const handleUpdateCatalog = async () => {
         try {
-            const token = localStorage.getItem("token");
-            await axios.put("http://localhost:9876/api/companies/catalog", { catalog: profile.serviceCatalog }, { headers: { Authorization: `Bearer ${token}` } });
+            await api.put("/api/companies/catalog", { catalog: profile.serviceCatalog });
             alert("Service catalog updated successfully!");
             setShowCatalogModal(false);
         } catch (err) {
@@ -237,8 +230,7 @@ export default function CompanyHome() {
         const price = offerAmount[requestId];
         if (!price) return;
         try {
-            const token = localStorage.getItem("token");
-            await axios.post(`http://localhost:9876/api/requests/${requestId}/offer-price`, { price: Number(price) }, { headers: { Authorization: `Bearer ${token}` } });
+            await api.post(`/api/requests/${requestId}/offer-price`, { price: Number(price) });
             alert("Price offer sent!");
             fetchAllData();
         } catch (err) {
@@ -254,10 +246,7 @@ export default function CompanyHome() {
 
     const fetchMessages = async (requestId) => {
         try {
-            const token = localStorage.getItem("token");
-            const res = await axios.get(`http://localhost:9876/api/requests/${requestId}/messages`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/api/requests/${requestId}/messages`);
             setChatMessages(res.data || []);
             setTimeout(scrollToBottom, 100);
         } catch (err) {
@@ -272,9 +261,8 @@ export default function CompanyHome() {
             return;
         }
         try {
-            const token = localStorage.getItem("token");
             const newDates = [...(profile?.unavailableDates || []), holidayDate];
-            await axios.put("http://localhost:9876/api/companies/holidays", { dates: newDates }, { headers: { Authorization: `Bearer ${token}` } });
+            await api.put("/api/companies/holidays", { dates: newDates });
             setHolidayDate("");
             fetchAllData();
         } catch (err) {
@@ -284,9 +272,8 @@ export default function CompanyHome() {
 
     const handleRemoveHoliday = async (dateToRemove) => {
         try {
-            const token = localStorage.getItem("token");
             const newDates = profile.unavailableDates.filter(d => d !== dateToRemove);
-            await axios.put("http://localhost:9876/api/companies/holidays", { dates: newDates }, { headers: { Authorization: `Bearer ${token}` } });
+            await api.put("/api/companies/holidays", { dates: newDates });
             fetchAllData();
         } catch (err) {
             alert("Failed to restore workday.");
@@ -296,8 +283,7 @@ export default function CompanyHome() {
     const sendMessage = async () => {
         if (!newMessage.trim() || activeChatRequest?.status === 'completed' || activeChatRequest?.status === 'rejected') return;
         try {
-            const token = localStorage.getItem("token");
-            await axios.post(`http://localhost:9876/api/requests/${activeChatRequest._id}/messages`, { text: newMessage }, { headers: { Authorization: `Bearer ${token}` } });
+            await api.post(`/api/requests/${activeChatRequest._id}/messages`, { text: newMessage });
             setNewMessage("");
         } catch (err) {
             alert("Failed to send message.");

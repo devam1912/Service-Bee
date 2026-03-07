@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../utils/api";
 import { Search, Sparkles, Send } from "lucide-react";
 import { motion } from "framer-motion";
 import Card from "./ui/Card";
@@ -16,11 +16,9 @@ const AIAssistant = () => {
 
         setLoading(true);
         try {
-            const token = localStorage.getItem("token");
-            const res = await axios.post(
-                "http://localhost:9876/api/ai/search",
-                { prompt },
-                { headers: { Authorization: `Bearer ${token}` } }
+            const res = await api.post(
+                "/api/ai/search",
+                { prompt }
             );
             setResult(res.data.suggestion);
         } catch (err) {

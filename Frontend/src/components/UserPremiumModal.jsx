@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, CheckCircle, Zap } from "lucide-react";
 import { cn } from "../lib/utils";
-import axios from "axios";
+import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 
 export default function UserPremiumModal({ isOpen, onClose }) {
@@ -9,8 +9,7 @@ export default function UserPremiumModal({ isOpen, onClose }) {
 
     const handleUserSubscribe = async (plan) => {
         try {
-            const token = localStorage.getItem("token");
-            const res = await axios.post("http://localhost:9876/api/payments/user/premium/create-order", { plan }, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await api.post("/api/payments/user/premium/create-order", { plan });
 
             const options = {
                 key: res.data.keyId,
@@ -21,11 +20,11 @@ export default function UserPremiumModal({ isOpen, onClose }) {
                 order_id: res.data.orderId,
                 handler: async (response) => {
                     try {
-                        await axios.post("http://localhost:9876/api/payments/user/premium/verify", {
+                        await api.post("/api/payments/user/premium/verify", {
                             orderId: res.data.orderId,
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature
-                        }, { headers: { Authorization: `Bearer ${token}` } });
+                        });
 
                         alert("Premium Upgrade Successful! You now have Priority Access.");
                         onClose();

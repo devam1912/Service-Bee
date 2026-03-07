@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 import Button from "./ui/Button";
 import { ShieldCheck, FileText, Check } from "lucide-react";
@@ -10,12 +10,7 @@ export default function ChatDisclaimer() {
     useEffect(() => {
         const checkTerms = async () => {
             try {
-                const token = localStorage.getItem("token");
-                if (!token) return;
-
-                const res = await axios.get("http://localhost:9876/api/terms/status", {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const res = await api.get("/api/terms/status");
 
                 if (!res.data.termsAccepted) {
                     setIsOpen(true);
@@ -29,10 +24,7 @@ export default function ChatDisclaimer() {
 
     const handleAccept = async () => {
         try {
-            const token = localStorage.getItem("token");
-            await axios.post("http://localhost:9876/api/terms/accept", {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.post("/api/terms/accept", {});
             localStorage.setItem("chat_disclaimer_accepted", "true");
             setIsOpen(false);
         } catch (err) {

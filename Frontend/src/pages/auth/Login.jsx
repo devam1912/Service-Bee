@@ -5,7 +5,7 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Card from "../../components/ui/Card";
 import { Sparkles, Building2, User, Shield, ArrowRight } from "lucide-react";
-import axios from "axios";
+import api from "../../utils/api";
 import { motion } from "framer-motion";
 
 export default function Login() {
@@ -27,13 +27,12 @@ export default function Login() {
 
     try {
       let endpoint = "";
-      const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:9876";
-      if (role === "user") endpoint = `${baseUrl}/api/users/login`;
-      else if (role === "company") endpoint = `${baseUrl}/api/companies/login`;
-      else endpoint = `${baseUrl}/api/admin/login`;
+      if (role === "user") endpoint = `/api/users/login`;
+      else if (role === "company") endpoint = `/api/companies/login`;
+      else endpoint = `/api/admin/login`;
 
       console.log("LOGIN ATTEMPT:", { email: formData.email, role });
-      const res = await axios.post(endpoint, formData);
+      const res = await api.post(endpoint, formData);
       console.log("LOGIN RESPONSE:", res.data);
 
       if (res.data.message?.toLowerCase().includes("otp")) {

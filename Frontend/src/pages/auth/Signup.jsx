@@ -4,7 +4,7 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Card from "../../components/ui/Card";
 import { Sparkles, Building2, User, ArrowRight } from "lucide-react";
-import axios from "axios";
+import api from "../../utils/api";
 import { motion } from "framer-motion";
 
 export default function Signup() {
@@ -34,10 +34,9 @@ export default function Signup() {
     setError("");
 
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:9876";
       const endpoint = role === "user"
-        ? `${baseUrl}/api/users/register`
-        : `${baseUrl}/api/companies/register`;
+        ? `/api/users/register`
+        : `/api/companies/register`;
 
       const payload = { ...formData };
 
@@ -46,7 +45,7 @@ export default function Signup() {
         if (!payload.workingDays) payload.workingDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
       }
 
-      await axios.post(endpoint, payload);
+      await api.post(endpoint, payload);
       navigate(`/verify-otp?email=${formData.email}&role=${role}`);
     } catch (err) {
       console.error(err);
