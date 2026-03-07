@@ -9,13 +9,16 @@ export const applySecurity = (app) => {
   // Basic security headers
   app.use(helmet());
 
-  // CORS (dev-friendly)
-  app.use(
-    cors({
-      origin: "*",
-      credentials: false,
-    })
-  );
+  // CORS configuration
+  const corsOptions = {
+    origin: ["https://service-bee-frontend.onrender.com", "http://localhost:5173", "*"],
+    methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    optionsSuccessStatus: 200,
+  };
+  app.use(cors(corsOptions));
+  app.options("*", cors(corsOptions)); // Enable pre-flight for all routes
 
   /**
    * ❌ DISABLED FOR NODE 22
