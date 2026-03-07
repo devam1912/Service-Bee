@@ -21,6 +21,7 @@ import privateChatRoutes from "./routes/privateChatRoutes.js";
 
 import initSocket from "./socket/index.js";
 import { setIO } from "./socket/socket.js"; // ✅ ADD THIS
+import { sendEmail } from "./utils/email.js";
 
 
 const app = express();
@@ -32,6 +33,21 @@ app.use(express.json());
 
 // Basic Health Check (visible in browser to confirm deployment)
 app.get("/api/hive-status", (req, res) => res.json({ status: "Bee-hive is Buzzing! 🐝", env: process.env.NODE_ENV || 'dev' }));
+
+app.get("/api/test-email", async (req, res) => {
+  const { to } = req.query;
+  if (!to) return res.status(400).json({ message: "Provide '?to=' param" });
+
+  const success = await sendEmail(
+    to,
+    "Bee Hive Test",
+    "If you see this, Render email sending is ALIVE! 🧪",
+    "<h1>🧪 Render Email Test</h1><p>The hive is working!</p>"
+  );
+
+  if (success) return res.json({ message: "Test email sent successfully!" });
+  return res.status(500).json({ message: "Email sending FAILED in production. Check Render logs." });
+});
 
 app.get("/api/hive-check", (req, res) => {
   res.json({
